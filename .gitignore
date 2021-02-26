@@ -14,4 +14,3 @@ testdir
 renv/*
 renv.lock
 .Rprofile
-.DS_Store
