@@ -7,7 +7,7 @@
 
 It contains a minimal amount of test data and R scripts, the latter of which are hardcoded into the Docker image so the user does not need to pass in a bunch of R scripts. R scripts that are in development should not be placed into this branch. Instead, pass them in as an input parameter for the WDL.
 
-The Docker container in question currently builds off the UAW-CAG Docker, so this repo does not contain the TOPMed packages and cannot be the sole basis of a Docker container.
+The Docker container in question currently builds off the UAW-CAG Docker, so this repo does not contain the TOPMed packages and cannot be the sole basis of a Docker container. It doesn't even have a Dockerfile.
 
 For documentation on this repo, please see the readme on any other branch.
 
