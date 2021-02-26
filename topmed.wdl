@@ -86,6 +86,29 @@ task runLdPrune{
 ##goto B
 		#R --vanilla --args ~{sep="," gds} ~{autosome_only} ~{exclude_pca_corr} ~{genome_build} ~{ld_r_threshold} ~{ld_win_size} ~{maf_threshold} ~{missing_threshold} < ~{debugScript}
 
+task runSubsetGds {
+	input {
+		File gds
+		String output_name
+	}
+	command {
+		set -eux -o pipefail
+
+		echo "Calling R script runSubsetGds.R"
+
+		R --vanilla --args ~{gds} ~{output_name} < /analysis_pipeline_WDL/R/subset_gds.R
+	}
+
+	runtime {
+		docker: "quay.io/aofarrel/topmed-pipeline-wdl:circleci-push"
+	}
+
+	output {
+		File out = "subsetted.gds"
+	}
+
+}
+
 workflow topmed {
 	input {
 		Array[File] vcf_files
@@ -128,6 +151,14 @@ workflow topmed {
 				ld_win_size = select_first([ldprune_ld_win_size, 10]),
 				maf_threshold = select_first([ldprune_maf_threshold, 0.01]),
 				missing_threshold = select_first([ldprune_missing_threshold, 0.01])
+		}
+	}
+
+	scatter(gds_file in runGds.out) {
+		call runSubsetGds {
+			input:
+				gds = gds_file,
+				output_name = "subsetted.gds"
 		}
 	}
 

@@ -1,6 +1,6 @@
 # TOPMed Analysis Pipeline -- WDL Version
 
-![help wanted](https://img.shields.io/badge/help-wanted-red)**Work in progress, not suitable for published use**![help wanted](https://img.shields.io/badge/help-wanted-red)
+![help wanted](https://img.shields.io/badge/help-wanted-red)**WIP; not suitable for published use**![help wanted](https://img.shields.io/badge/help-wanted-red)
 ---
 [![WDL 1.0 shield](https://img.shields.io/badge/WDL-1.0-lightgrey.svg)](https://github.com/openwdl/wdl/blob/main/versions/1.0/SPEC.md)  
 This is a collection of several WDL files which attempt to implement some components of the [University of Washington TOPMed pipeline](https://github.com/UW-GAC/analysis_pipeline). Rather than running as a Python pipeline, this takes the R scripts which the Python pipeline is calling and wraps them into various WDL tasks. The original goal of this task was to provide sample preparation options for TOPMed Freeze 8 users on Terra, who previously had to work with an unoptimized Jupyter notebook, but it may have wider applications than that. Still, to that end, it is **not complete** and it should not be used for publications at this point in time.
@@ -44,7 +44,7 @@ GDS file matching the name of the input vds with ".gds" appeneded to the end.
 ## LD Prune
 This stage automatically takes in the GDS output of the previous step.
 1. ld_pruning.R, based on [UoW ld_pruning.R](https://github.com/UW-GAC/analysis_pipeline/blob/master/R/ld_pruning.R)
-The subset_gds.R, based on [UoW subset_gds.R](https://github.com/UW-GAC/analysis_pipeline/blob/master/R/subset_gds.R), and merge_gds.R portion, are currently in-progress.
+2. The subset_gds.R, based on [UoW subset_gds.R](https://github.com/UW-GAC/analysis_pipeline/blob/master/R/subset_gds.R)
 
 ### Required Inputs
 * ldprune_disk : *int* of disk space to allot for ld_pruning.R
