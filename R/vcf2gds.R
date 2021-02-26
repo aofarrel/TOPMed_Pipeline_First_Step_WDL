@@ -1,51 +1,17 @@
-library(argparser)
-library(TopmedPipeline)
+# This project started as a fork of manning-lab/vcfToGds and contained a copy of
+# this file by Tim Majarian.
+# Tim's copy is here: https://github.com/manning-lab/vcfToGds/blob/master/vcfToGds.R
+####################################################################################
+# Adapted from:
+# 	Author: topmed analysis pipeline, smgogarten
+# 	Link: https://github.com/smgogarten/analysis_pipeline/blob/master/R/vcf2gds.R
+
 library(SeqArray)
-library(tools)
-sessionInfo()
 
-argp <- arg_parser("Convert VCF to GDS")
-argp <- add_argument(argp, "config", help="path to config file")
-argp <- add_argument(argp, "--chromosome", help="chromosome (1-24 or X,Y)", type="character")
-argp <- add_argument(argp, "--version", help="pipeline version number")
-argv <- parse_args(argp)
-cat(">>> TopmedPipeline version ", argv$version, "\n")
-config <- readConfig(argv$config)
-chr <- intToChr(argv$chromosome)
+args <- commandArgs(trailingOnly=T)
+vcf <- args[1]
 
-required <- c("vcf_file", "gds_file")
-optional <- c(format="GT")
-config <- setConfigDefaults(config, required, optional)
-print(config)
+# remove extension, can be .vcf, .vcf.gz, .vcf.bgz
+gds_out <- paste0(sub(".vcf.bgz$|.vcf.gz$|.vcf$", "", basename(vcf)), ".gds")
 
-## vcf file can have two parts split by chromosome identifier
-vcffile <- config["vcf_file"]
-gdsfile <- config["gds_file"]
-if (!is.na(chr)) {
-    vcffile <- insertChromString(vcffile, chr, "vcf_file")
-    gdsfile <- insertChromString(gdsfile, chr, "gds_file")
-}
-
-## pick format fields to import
-fmt.import <- strsplit(config["format"], " ", fixed=TRUE)[[1]]
-
-## write to the scratch disk of each node
-gdsfile.tmp <- tempfile()
-message("gds temporarily located at ", gdsfile.tmp)
-
-## is this a bcf file?
-isBCF <- file_ext(vcffile) == "bcf"
-if (isBCF) {
-    ## use bcftools to read text
-    vcffile <- pipe(paste("bcftools view", vcffile), "rt")
-}
-
-seqVCF2GDS(vcffile, gdsfile.tmp, fmt.import=fmt.import, storage.option="LZMA_RA",
-           parallel=countThreads())
-
-if (isBCF) close(vcffile)
-
-## copy it
-file.copy(gdsfile.tmp, gdsfile)
-## remove the tmp file
-file.remove(gdsfile.tmp)
+seqVCF2GDS(vcf, gds_out, storage.option="LZMA_RA", verbose=TRUE)

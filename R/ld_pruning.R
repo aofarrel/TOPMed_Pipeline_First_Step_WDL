@@ -1,57 +1,48 @@
-library(argparser)
 library(TopmedPipeline)
 library(SeqVarTools)
 library(SNPRelate)
 sessionInfo()
 
-argp <- arg_parser("LD pruning")
-argp <- add_argument(argp, "config", help="path to config file")
-argp <- add_argument(argp, "--chromosome", help="chromosome (1-24 or X,Y)", type="character")
-argp <- add_argument(argp, "--version", help="pipeline version number")
-argv <- parse_args(argp)
-cat(">>> TopmedPipeline version ", argv$version, "\n")
-config <- readConfig(argv$config)
-chr <- intToChr(argv$chromosome)
+args <- commandArgs(trailingOnly=T)
+gdsfile <- args[1]
+autosome_only <- args[2]
+exclude_pca_corr <- args[3]
+genome_build <- args[4]
+ld_r_threshold <- args[5]
+ld_win_size <- args[6]
+maf_threshold <- args[7]
+missing_threshold <- args[8]
 
-required <- c("gds_file")
-optional <- c("autosome_only"=TRUE,
-              "exclude_pca_corr"=TRUE,
-              "genome_build"="hg38",
-              "ld_r_threshold"=0.32,
-              "ld_win_size"=10,
-              "maf_threshold"=0.01,
-              "missing_threshold"=0.01,
-              "out_file"="pruned_variants.RData",
-              "sample_include_file"=NA,
-              "variant_include_file"=NA)
-config <- setConfigDefaults(config, required, optional)
-print(config)
 
-## gds file can have two parts split by chromosome identifier
-gdsfile <- config["gds_file"]
-outfile <- config["out_file"]
-varfile <- config["variant_include_file"]
+#argp <- add_argument(argp, "--chromosome", help="chromosome (1-24 or X,Y)", type="character")
+#chr <- intToChr(argv$chromosome)
+chr <- NA
+
+# gds file can have two parts split by chromosome identifier,
+# but we're gonna hope that's not the case here!
+outfile <- "pruned_variants.RData"
+#varfile <- config["variant_include_file"]
 if (!is.na(chr)) {
     message("Running on chromosome ", chr)
     bychrfile <- grepl(" ", gdsfile) # do we have one file per chromosome?
     gdsfile <- insertChromString(gdsfile, chr)
     outfile <- insertChromString(outfile, chr, err="out_file")
-    varfile <- insertChromString(varfile, chr)
+    #varfile <- insertChromString(varfile, chr)
 }
 
 gds <- seqOpen(gdsfile)
 
-if (!is.na(config["sample_include_file"])) {
-    sample.id <- getobj(config["sample_include_file"])
-    message("Using ", length(sample.id), " samples")
-} else {
-    sample.id <- NULL
-    message("Using all samples")
-}
+# if (!is.na(config["sample_include_file"])) {
+#     sample.id <- getobj(config["sample_include_file"])
+#     message("Using ", length(sample.id), " samples")
+# } else {
+#     sample.id <- NULL
+#     message("Using all samples")
+# }
 
-if (!is.na(varfile)) {
-    filterByFile(gds, varfile)
-}
+# if (!is.na(varfile)) {
+#     filterByFile(gds, varfile)
+# }
 
 ## if we have a chromosome indicator but only one gds file, select chromosome
 if (!is.na(chr) && !bychrfile) {
@@ -60,22 +51,30 @@ if (!is.na(chr) && !bychrfile) {
 
 filterByPass(gds)
 filterBySNV(gds)
-if (as.logical(config["exclude_pca_corr"])) {
-    filterByPCAcorr(gds, build=config["genome_build"])
+if (as.logical(exclude_pca_corr)) {
+    filterByPCAcorr(gds, build=genome_build)
 }
 
 variant.id <- seqGetData(gds, "variant.id")
 message("Using ", length(variant.id), " variants")
 
-auto.only <- as.logical(config["autosome_only"])
+auto.only <- as.logical(autosome_only)
 if (chr %in% "X" & auto.only) stop("Set autosome_only=FALSE to prune X chrom variants")
-maf <- as.numeric(config["maf_threshold"])
-miss <- as.numeric(config["missing_threshold"])
-r <- as.numeric(config["ld_r_threshold"])
-win <- as.numeric(config["ld_win_size"]) * 1e6
+maf <- as.numeric(maf_threshold)
+miss <- as.numeric(missing_threshold)
+r <- as.numeric(ld_r_threshold)
+win <- as.numeric(ld_win_size) * 1e6
+
+print(auto.only)
+print(maf)
+print(miss)
+print(r)
+print(win)
 
 set.seed(100) # make pruned SNPs reproducible
-snpset <- snpgdsLDpruning(gds, sample.id=sample.id, snp.id=variant.id,
+
+# sample.id set to NULL as we do not support sample_include_file
+snpset <- snpgdsLDpruning(gds, sample.id=NULL, snp.id=variant.id,
                           autosome.only=auto.only, maf=maf, missing.rate=miss,
                           method="corr", slide.max.bp=win, ld.threshold=r,
                           num.thread=countThreads())
