@@ -14,4 +14,11 @@ testdir
 renv/*
 renv.lock
 .Rprofile
+
+# mac files
 .DS_Store
+
+# cromwell files
+Cromwell.stderr.txt
+Cromwell.stdout.txt
+cromwell-input/*

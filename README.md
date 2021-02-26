@@ -13,6 +13,7 @@ For documentation on this repo, please see the readme on any other branch.
 
 ## R Scripts Included
 * ld_pruning.R
+* subset_gds.R
 * vcfToGds.R
 
 ### Authors
