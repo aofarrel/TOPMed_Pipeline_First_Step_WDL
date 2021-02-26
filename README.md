@@ -29,8 +29,8 @@ The original script had arguments relating to runtime such as `ncores` and `clus
 All workflow inputs go into one JSON file. With that being said, because this is a big pipeline, this README breaks them down in catagory per R script they apply to.
 
 ## Conversion to GDS
-This script converts VCF (one per chromosome) to GDS files, discarding non-genotype FORMAT fields. 
-...and that's it.
+This script converts VCF (one per chromosome) to GDS files, discarding non-genotype FORMAT fields.  
+...and that's it.  
 Currently, it only runs vcfToGds.R, meaning that ensuring unique variant IDs (unique_variant_ids.R) and genotypic consistency (check_gds.R) are skipped. However, implenting these scripts are being worked on.
 
 ### Required Inputs
@@ -44,12 +44,11 @@ GDS file matching the name of the input vds with ".gds" appeneded to the end.
 ## LD Prune
 This stage automatically takes in the GDS output of the previous step.
 1. ld_pruning.R, based on [UoW ld_pruning.R](https://github.com/UW-GAC/analysis_pipeline/blob/master/R/ld_pruning.R)
-2. subset_gds.R, based on [UoW subset_gds.R](https://github.com/UW-GAC/analysis_pipeline/blob/master/R/subset_gds.R)
-The merge_gds.R portion is currently in-progress.
+The subset_gds.R, based on [UoW subset_gds.R](https://github.com/UW-GAC/analysis_pipeline/blob/master/R/subset_gds.R), and merge_gds.R portion, are currently in-progress.
 
 ### Required Inputs
-* ldprune_disk : *int* of disk space to allot for vcfToGds.R
-* ldprune_memory : *int* of memory to allot for vcfToGds.R
+* ldprune_disk : *int* of disk space to allot for ld_pruning.R
+* ldprune_memory : *int* of memory to allot for ld_pruning.R
 
 ### Optional Inputs
     parameter | type | default value | description

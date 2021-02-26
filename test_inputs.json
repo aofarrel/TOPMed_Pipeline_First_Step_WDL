@@ -1,7 +1,7 @@
 {
-  "vcfToGds_wf.vcf_files": ["testdata/ALL.chr22.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.MAC10.01p.vcf.gz", "testdata/1KG_phase3_subset_chr21.vcf.gz"],
-  "vcfToGds_wf.vcfgds_disk": 50,
-  "vcfToGds_wf.vcfgds_memory": 10,
-  "vcfToGds_wf.ldprune_disk": 500,
-  "vcfToGds_wf.ldprune_memory": 10
+  "topmed.vcf_files": ["testdata/ALL.chr22.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.MAC10.01p.vcf.gz", "testdata/1KG_phase3_subset_chr21.vcf.gz"],
+  "topmed.vcfgds_disk": 50,
+  "topmed.vcfgds_memory": 10,
+  "topmed.ldprune_disk": 500,
+  "topmed.ldprune_memory": 10
 }
