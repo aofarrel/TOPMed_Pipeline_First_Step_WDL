@@ -3,5 +3,6 @@
   "topmed.vcfgds_disk": 50,
   "topmed.vcfgds_memory": 10,
   "topmed.ldprune_disk": 500,
-  "topmed.ldprune_memory": 10
+  "topmed.ldprune_memory": 10,
+  "topmed.merge_script": "develop_merge_gds.R"
 }

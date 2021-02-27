@@ -109,6 +109,32 @@ task runSubsetGds {
 
 }
 
+task runMergeGds {
+	input {
+		Array[File] gds_array
+		String merged_name
+
+		# R script, will eventually be hardcoded
+		File debugScript
+	}
+
+	command {
+		set -eux -o pipefail
+
+		echo "Calling R script runMergeGds.R"
+
+		R --vanilla --args ~{sep="," gds_array} ~{merged_name} < ~{debugScript}
+	}
+
+	runtime {
+		docker: "quay.io/aofarrel/vcf2gds:circleci-push"
+	}
+
+	output {
+		File out = "merged.gds"
+	}
+}
+
 workflow topmed {
 	input {
 		Array[File] vcf_files
@@ -126,6 +152,9 @@ workflow topmed {
 		Int? ldprune_ld_win_size
 		Float? ldprune_maf_threshold
 		Float? ldprune_missing_threshold
+
+		# debug scripts
+		File merge_script
 	}
 
 	scatter(vcf_file in vcf_files) {
@@ -160,6 +189,13 @@ workflow topmed {
 				gds = gds_file,
 				output_name = "subsetted.gds"
 		}
+	}
+
+	call runMergeGds {
+		input:
+			gds_array = runSubsetGds.out,
+			merged_name = "merged.gds",
+			debugScript = merge_script
 	}
 
 	meta {
