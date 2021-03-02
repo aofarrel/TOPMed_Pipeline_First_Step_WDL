@@ -6,9 +6,11 @@ sessionInfo()
 
 args <- commandArgs(trailingOnly=T)
 gds_file <- args[1]
-#chr_kind <- args[2]
+chr_kind <- args[2]
 
-chr_kind <- 0
+# Some TOPMed projects include Y chromosome in their files
+# Not sure if this will work on such files; for now this part
+# is more of a scaffold
 
 if (chr_kind == 0) {
     chrtype <- "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 X"
@@ -17,32 +19,16 @@ if (chr_kind == 1) {
     chrtype <- "Y"
 }
 
-# Annoyingly, insertChromString() requires there to be a space in
-# the name of an inserted file, but WDL doesn't pass in names with
-# quotes so such a filename will be interpreted as two positional
-# arguments.
-
 ## gds file has two parts split by chromosome identifier
 
-######################## debug zone ########################
-#
-#gdsfile <- unname(config["gds_file"])
-#
-# If we comment this out to avoid usage of the config (which
-# doesn't exist in the WDL context), we also avoid using
-# the unname function. however, it is (theorhetically) accounted
-# for by the addition of unname() around the gds_file input
-# on insertChromString. however, as noted below, we are
-# getting a blank space error in that function...
-############################################################
 chr <- strsplit(chrtype, " ", fixed=TRUE)[[1]]
 ######################## debug zone ########################
-# insertChromString() results in downstream file not found.
+# insertChromString() results in downstream file not found
+# so we'll remove it
 ############################################################
 #gds.files <- sapply(chr, function(c) insertChromString(unname(gds_file), c, "gds_file"))
 gds.files <- gds_file
 gds.list <- lapply(gds.files, seqOpen, readonly=FALSE)
-
 
 ######################## debug zone ########################
 ## exit gracefully if we only have one file
