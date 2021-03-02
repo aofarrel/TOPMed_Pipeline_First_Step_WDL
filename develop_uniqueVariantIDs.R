@@ -39,7 +39,8 @@ chr <- strsplit(chrtype, " ", fixed=TRUE)[[1]]
 ######################## debug zone ########################
 # insertChromString() results in downstream file not found.
 ############################################################
-gds.files <- sapply(chr, function(c) insertChromString(unname(gds_file), c, "gds_file"))
+#gds.files <- sapply(chr, function(c) insertChromString(unname(gds_file), c, "gds_file"))
+gds.files <- gds_file
 gds.list <- lapply(gds.files, seqOpen, readonly=FALSE)
 
 
@@ -89,8 +90,6 @@ for (c in 2:length(chr)) {
     message(last.id)
     message("var.length[c]")
     message(var.length[c])
-    message("length[c]")
-    message(length[c])
     id.new[[c]] <- (last.id + 1):(last.id + var.length[c]) # crash because var.length[c] is NA
     stopifnot(length(id.new[[c]]) == var.length[c])
 }
