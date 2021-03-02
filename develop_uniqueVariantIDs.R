@@ -35,43 +35,11 @@ if (chr_kind == 1) {
 # on insertChromString. however, as noted below, we are
 # getting a blank space error in that function...
 ############################################################
-
-
 chr <- strsplit(chrtype, " ", fixed=TRUE)[[1]]
-
 ######################## debug zone ########################
-# This always seems to throw the blank space error.
-#
-gds.files <- sapply(chr, function(c) insertChromString(unname(gds_file), c, "gds_file"))
-#
-# The function, which is imported from TopmedPipeline, is as follows:
-#
-#' Format a string by inserting chromosome into a blank space
-#'
-#' @param x Character string
-#' @param chr Chromosome number (or character) to instert
-#' @param err If not \code{NULL}, print this string with an error message about requiring a blank space
-#' @return String \code{x} with \code{chr} inserted into blank space
-#'
-#' @export
-#insertChromString <- function(x, chr, err=NULL) {
-    #if (!is.null(err) & !(grepl(" ", x, fixed=TRUE))) {
-        #stop(paste(err, "must have a blank space to insert chromosome number"))
-    #}
-    #sub(" ", chr, x, fixed=TRUE)
-#}
-#
-#
-# But, from the documentation, it doesn't look like a space for chr
-# should be required. And we can't expect users to insert a space.
-# And we can't insert a space before passing in to the R script
-# because we are using positional arguments and if a filname has
-# a space it thinks the stuff after the space is a positional (I checked).
-# And inserting a space into a filename in R is... ugh.
+# insertChromString() results in downstream file not found.
 ############################################################
-
-
-gds.files <- gds_file
+gds.files <- sapply(chr, function(c) insertChromString(unname(gds_file), c, "gds_file"))
 gds.list <- lapply(gds.files, seqOpen, readonly=FALSE)
 
 
@@ -94,7 +62,6 @@ var.length <- sapply(gds.list, function(x) {
     objdesp.gdsn(index.gdsn(x, "variant.id"))$dim
 })
 seqClose(gds.list[[1]])
-message(var.length)
 
 ######################## debug zone ########################
 # we crash in the following line
@@ -122,6 +89,8 @@ for (c in 2:length(chr)) {
     message(last.id)
     message("var.length[c]")
     message(var.length[c])
+    message("length[c]")
+    message(length[c])
     id.new[[c]] <- (last.id + 1):(last.id + var.length[c]) # crash because var.length[c] is NA
     stopifnot(length(id.new[[c]]) == var.length[c])
 }
