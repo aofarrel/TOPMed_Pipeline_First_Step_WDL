@@ -34,51 +34,6 @@ task runGds {
 	}
 }
 
-task runUniqueVars {
-	input {
-		File gds
-		File debugScript
-		Int chr_kind = 0
-		String output_file_name = "unique.gds"
-	}
-
-	command {
-		set -eux -o pipefail
-
-		echo "Calling uniqueVariantIDs.R"
-
-		R --vanilla --args "~{gds}" ~{chr_kind} < ~{debugScript}
-	}
-
-	runtime {
-		docker: "quay.io/aofarrel/topmed-pipeline-wdl:circleci-push"
-	}
-
-	output {
-		File out = output_file_name
-	}
-}
-
-task runCheckGds {
-	input {
-		File gds
-		File vcf
-		File debugScript
-	}
-
-	command {
-		set -eux -o pipefail
-
-		echo "Calling check_gds.R"
-
-		R --vanilla --args ~{gds} ~{vcf} < ~{debugScript}
-	}
-
-	runtime {
-		docker: "quay.io/aofarrel/topmed-pipeline-wdl:circleci-push"
-	}
-}
-
 task runLdPrune{
 	input {
 
