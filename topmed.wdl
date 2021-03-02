@@ -10,7 +10,8 @@ task runGds {
 		File vcf
 		Int disk
 		Int memory
-		String output_file_name = basename(sub(vcf, "\\.vcf.gz$", ".gds"))
+		String output_file_name = basename(sub(vcf, "\\.vcf.gz$", " .gds"))
+		File debug
 	}
 	
 	command {
@@ -18,7 +19,7 @@ task runGds {
 
 		echo "Calling R script vcfToGds.R"
 
-		R --vanilla --args ~{vcf} < /analysis_pipeline_WDL/R/vcf2gds.R
+		R --vanilla --args "~{vcf}" < ~{debug}
 	}
 
 	runtime {
@@ -30,6 +31,51 @@ task runGds {
 
 	output {
 		File out = output_file_name
+	}
+}
+
+task runUniqueVars {
+	input {
+		File gds
+		File debugScript
+		Int chr_kind = 0
+		String output_file_name = "unique.gds"
+	}
+
+	command {
+		set -eux -o pipefail
+
+		echo "Calling uniqueVariantIDs.R"
+
+		R --vanilla --args "~{gds}" ~{chr_kind} < ~{debugScript}
+	}
+
+	runtime {
+		docker: "quay.io/aofarrel/topmed-pipeline-wdl:circleci-push"
+	}
+
+	output {
+		File out = output_file_name
+	}
+}
+
+task runCheckGds {
+	input {
+		File gds
+		File vcf
+		File debugScript
+	}
+
+	command {
+		set -eux -o pipefail
+
+		echo "Calling check_gds.R"
+
+		R --vanilla --args ~{gds} ~{vcf} < ~{debugScript}
+	}
+
+	runtime {
+		docker: "quay.io/aofarrel/topmed-pipeline-wdl:circleci-push"
 	}
 }
 
@@ -115,6 +161,10 @@ workflow topmed {
 		Int vcfgds_disk
 		Int vcfgds_memory
 
+		File debug
+		File uniquevars_debug
+		File checkgds_debug
+
 		# ld prune stuff
 		Int ldprune_disk
 		Int ldprune_memory
@@ -133,7 +183,19 @@ workflow topmed {
 			input:
 				vcf = vcf_file,
 				disk = vcfgds_disk,
-				memory = vcfgds_memory
+				memory = vcfgds_memory,
+				debug = debug
+		}
+		call runUniqueVars {
+			input:
+				gds = runGds.out,
+				debugScript = uniquevars_debug
+		}
+		call runCheckGds {
+			input:
+				gds = runUniqueVars.out,
+				vcf = vcf_file,
+				debugScript = checkgds_debug
 		}
 	}
 

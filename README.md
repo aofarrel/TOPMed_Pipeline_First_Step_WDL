@@ -7,6 +7,9 @@ This is a collection of several WDL files which attempt to implement some compon
 
 As it works in a Docker container, it does not have any external dependencies other than the usual setup required for [WDL](https://software.broadinstitute.org/wdl/documentation/quickstart) and [Cromwell](http://cromwell.readthedocs.io/en/develop/).
 
+## Bonuses
+* The original script required a space to be included in input files. This is no longer necessary as the conversion from vcf to gds will add a space into the file name.
+
 ## Limitations
 * At the moment, everything exists in one WDL file. The eventual plan is to break this down into multiple WDLs while still providing one mega-WDL, if it proves feasible to maintain both options.
 * Functionality is not one-to-one with the UW pipeline.
