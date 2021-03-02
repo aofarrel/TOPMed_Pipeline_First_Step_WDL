@@ -20,3 +20,4 @@ For documentation on this repo, please see the readme on any other branch.
 Contributing authors to the WDLs in this fork include:
 * Ash O'Farrell (aofarrel@ucsc.edu)
 * Tim Majarian (tmajaria@broadinstitute.org) -- original [GDS2VCF WDL and WDL-ready R script](https://github.com/manning-lab/vcfToGds) that this project was originally a fork of
+Contributors specific to the R scripts within are accounted for in the header of the R scripts whenever possible.

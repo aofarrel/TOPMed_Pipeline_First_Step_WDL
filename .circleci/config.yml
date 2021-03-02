@@ -1,0 +1,17 @@
+version: 2.1
+
+jobs:
+  build-docker-image: 
+    machine: true
+    steps:
+      - checkout
+      - run:
+          name: Do nothing
+          command: | 
+            echo "This repo gets slapped onto an existing docker and doesn't work on its own."
+
+workflows: 
+  main:
+    jobs:
+      - build-docker-image:
+          context: test-secret

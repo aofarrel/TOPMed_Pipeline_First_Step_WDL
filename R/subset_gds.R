@@ -1,3 +1,8 @@
+####################################################################################
+# Adapted from:
+# 	Author: topmed analysis pipeline, smgogarten
+# 	Link: https://github.com/UW-GAC/analysis_pipeline/blob/master/R/subset_gds.R
+
 library(TopmedPipeline)
 library(SeqArray)
 sessionInfo()

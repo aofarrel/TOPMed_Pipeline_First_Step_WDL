@@ -1,3 +1,8 @@
+####################################################################################
+# Adapted from:
+#   Author: topmed analysis pipeline, smgogarten, rollinroy
+#   Link: https://github.com/UW-GAC/analysis_pipeline/blob/master/R/ld_pruning.R
+
 library(TopmedPipeline)
 library(SeqVarTools)
 library(SNPRelate)
