@@ -169,7 +169,7 @@ workflow topmed {
 				maf_threshold = select_first([ldprune_maf_threshold, 0.01]),
 				missing_threshold = select_first([ldprune_missing_threshold, 0.01])
 		}
-	}
+	} 
 
 	scatter(gds_file in runGds.out) {
 		call runSubsetGds {
