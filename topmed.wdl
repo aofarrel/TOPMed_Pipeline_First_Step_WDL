@@ -11,7 +11,6 @@ task runGds {
 		Int disk
 		Int memory
 		String output_file_name = basename(sub(vcf, "\\.vcf.gz$", " .gds"))
-		File debug
 	}
 	
 	command {
@@ -19,7 +18,7 @@ task runGds {
 
 		echo "Calling R script vcfToGds.R"
 
-		R --vanilla --args "~{vcf}" < ~{debug}
+		R --vanilla --args "~{vcf}" < /analysis_pipeline_WDL/R/vcf2gds.R
 	}
 
 	runtime {
@@ -36,19 +35,19 @@ task runGds {
 
 task runUniqueVars {
 	input {
-		File gds
+		Array[File] gds
 		File debugScript
 		Int chr_kind = 0
 		String output_file_name = "unique.gds"
 	}
 
-	command {
+	command <<<
 		set -eux -o pipefail
 
 		echo "Calling uniqueVariantIDs.R"
 
 		R --vanilla --args "~{gds}" ~{chr_kind} < ~{debugScript}
-	}
+	>>>
 
 	runtime {
 		docker: "quay.io/aofarrel/topmed-pipeline-wdl:circleci-push"
@@ -71,7 +70,7 @@ task runCheckGds {
 
 		echo "Calling check_gds.R"
 
-		R --vanilla --args ~{gds} ~{vcf} < ~{debugScript}
+		R --vanilla --args "~{gds}" ~{vcf} < ~{debugScript}
 	}
 
 	runtime {
@@ -109,7 +108,7 @@ task runLdPrune{
 		echo "Calling R script ld_pruning.R"
 
 		# File version
-		R --vanilla --args ~{gds} ~{autosome_only} ~{exclude_pca_corr} ~{genome_build} ~{ld_r_threshold} ~{ld_win_size} ~{maf_threshold} ~{missing_threshold} < /analysis_pipeline_WDL/R/ld_pruning.R
+		R --vanilla --args "~{gds}" ~{autosome_only} ~{exclude_pca_corr} ~{genome_build} ~{ld_r_threshold} ~{ld_win_size} ~{maf_threshold} ~{missing_threshold} < /analysis_pipeline_WDL/R/ld_pruning.R
 
 		# Array version
 		##goto B
@@ -142,7 +141,7 @@ task runSubsetGds {
 
 		echo "Calling R script runSubsetGds.R"
 
-		R --vanilla --args ~{gds} ~{output_name} < /analysis_pipeline_WDL/R/subset_gds.R
+		R --vanilla --args "~{gds}" ~{output_name} < /analysis_pipeline_WDL/R/subset_gds.R
 	}
 
 	runtime {
@@ -161,14 +160,13 @@ workflow topmed {
 		Int vcfgds_disk
 		Int vcfgds_memory
 
-		File debug
+		# R scripts
 		File uniquevars_debug
 		File checkgds_debug
 
 		# ld prune stuff
 		Int ldprune_disk
 		Int ldprune_memory
-		
 		Boolean? ldprune_autosome_only
 		Boolean? ldprune_exclude_pca_corr
 		String? ldprune_genome_build
@@ -176,6 +174,10 @@ workflow topmed {
 		Int? ldprune_ld_win_size
 		Float? ldprune_maf_threshold
 		Float? ldprune_missing_threshold
+
+		# unique var IDs
+		Int uniquevars_memory
+		Int uniquevars_disk
 	}
 
 	scatter(vcf_file in vcf_files) {
@@ -183,46 +185,17 @@ workflow topmed {
 			input:
 				vcf = vcf_file,
 				disk = vcfgds_disk,
-				memory = vcfgds_memory,
-				debug = debug
+				memory = vcfgds_memory
 		}
-		call runUniqueVars {
-			input:
-				gds = runGds.out,
-				debugScript = uniquevars_debug
-		}
-		call runCheckGds {
-			input:
-				gds = runUniqueVars.out,
-				vcf = vcf_file,
-				debugScript = checkgds_debug
-		}
+	}
+	call runUniqueVars {
+		input:
+			gds = runGds.out,
+			debugScript = uniquevars_debug
 	}
 
-	scatter(gds_file in runGds.out) { # Comment out for array version
-		call runLdPrune {
-			input:
-				gds = gds_file, # File version
-				#gds = runGds.out, # Array version
-				disk = ldprune_disk,
-				memory = ldprune_memory,
-				autosome_only = select_first([ldprune_autosome_only, false]),
-				exclude_pca_corr = select_first([ldprune_exclude_pca_corr, true]),
-				genome_build = select_first([ldprune_genome_build, "hg38"]),
-				ld_r_threshold = select_first([ldprune_ld_r_threshold, 0.32]),
-				ld_win_size = select_first([ldprune_ld_win_size, 10]),
-				maf_threshold = select_first([ldprune_maf_threshold, 0.01]),
-				missing_threshold = select_first([ldprune_missing_threshold, 0.01])
-		}
-	}
+	
 
-	scatter(gds_file in runGds.out) {
-		call runSubsetGds {
-			input:
-				gds = gds_file,
-				output_name = "subsetted.gds"
-		}
-	}
 
 	meta {
 		author: "Ash O'Farrell"

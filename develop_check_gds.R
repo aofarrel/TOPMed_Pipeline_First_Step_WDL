@@ -3,23 +3,16 @@ library(SeqArray)
 library(tools)
 sessionInfo()
 
-argp <- arg_parser("Check GDS against original VCF")
-argp <- add_argument(argp, "config", help="path to config file")
-argp <- add_argument(argp, "--chromosome", help="chromosome (1-24 or X,Y)", type="character")
-argp <- add_argument(argp, "--version", help="pipeline version number")
-argv <- parse_args(argp)
-cat(">>> TopmedPipeline version ", argv$version, "\n")
-config <- readConfig(argv$config)
-chr <- intToChr(argv$chromosome)
+args <- commandArgs(trailingOnly=T)
+gds_file <- args[1]
+vcf_file <- args[2]
 
-required <- c("vcf_file", "gds_file")
-optional <- c("sample_file"=NA)
-config <- setConfigDefaults(config, required, optional)
-print(config)
+sample_file <- NA
+
 
 ## vcf file can have two parts split by chromosome identifier
-vcffile <- config["vcf_file"]
-gdsfile <- config["gds_file"]
+vcffile <- vcf_file
+gdsfile <- gds_file
 if (!is.na(chr)) {
     vcffile <- insertChromString(vcffile, chr, "vcf_file")
     gdsfile <- insertChromString(gdsfile, chr, "gds_file")
@@ -35,11 +28,11 @@ on.exit(seqClose(f))
 %s
 seqGDS2VCF(f, stdout(), info.var=character(), fmt.var=character(), verbose=FALSE)
 "
-if (!is.na(config["sample_file"])) {
+if (!is.na(sample_file)) {
     keep_str <- sprintf("
 sample.id <- readLines('%s')
 seqSetFilter(f, sample.id=sample.id)
-", config["sample_file"])
+", "sample_file")
 } else {
     keep_str <- ""
 }

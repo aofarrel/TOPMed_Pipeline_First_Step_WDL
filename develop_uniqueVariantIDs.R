@@ -7,6 +7,7 @@ sessionInfo()
 args <- commandArgs(trailingOnly=T)
 gds_file <- args[1]
 chr_kind <- args[2]
+gds_file = strsplit(gds_file,",")[[1]]
 
 # Some TOPMed projects include Y chromosome in their files
 # Not sure if this will work on such files; for now this part
