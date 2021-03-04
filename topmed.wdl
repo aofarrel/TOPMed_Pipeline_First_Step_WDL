@@ -10,7 +10,7 @@ task runGds {
 		File vcf
 		Int disk
 		Int memory
-		String output_file_name = basename(sub(vcf, "\\.vcf.gz$", " .gds"))
+		String output_file_name = basename(sub(vcf, "\\.vcf.gz$", ".gds"))
 	}
 	
 	command {
@@ -41,42 +41,60 @@ task runUniqueVars {
 		String output_file_name = "unique.gds"
 	}
 
-	command <<<
+	command {
 		set -eux -o pipefail
 
-		echo "Calling uniqueVariantIDs.R"
+		echo "Doing nothing so we can move on to check_gds"
 
-		R --vanilla --args "~{gds}" ~{chr_kind} < ~{debugScript}
-	>>>
+		#echo "Calling uniqueVariantIDs.R"
+
+		#R --vanilla --args "~{sep="," gds}" ~{chr_kind} < ~{debugScript}
+	}
 
 	runtime {
 		docker: "quay.io/aofarrel/topmed-pipeline-wdl:circleci-push"
 	}
 
 	output {
-		File out = output_file_name
+		##goto C
+		Array[File] out = gds
 	}
 }
+##goto C
+# should be Array[File] out = output_file_name
 
 task runCheckGds {
 	input {
 		File gds
-		File vcf
+		Array[File] vcfs
 		File debugScript
+		# there is a small chance that the vcf2gds sub made more than
+		# one replacement
+		String finaloption = basename(sub(gds, "\\.gds$", ".vcf.gz"))
 	}
 
 	command {
 		set -eux -o pipefail
 
+		echo "Searching for relevent VCF"
+
+		python << CODE
+		for file in ~{sep="," vcfs}:
+			print(file)
+		>>
+		
 		echo "Calling check_gds.R"
 
-		R --vanilla --args "~{gds}" ~{vcf} < ~{debugScript}
+		# just pass in one VCF, hopefully the correct one
+		##goto D
 	}
 
 	runtime {
 		docker: "quay.io/aofarrel/topmed-pipeline-wdl:circleci-push"
 	}
 }
+##goto D
+#R --vanilla --args "~{gds}" ~{vcfs} < ~{debugScript}
 
 task runLdPrune{
 	input {
@@ -160,11 +178,11 @@ workflow topmed {
 		Int vcfgds_disk
 		Int vcfgds_memory
 
-		# R scripts
+		# R scripts that aren't hardcoded yet
 		File uniquevars_debug
 		File checkgds_debug
 
-		# ld prune stuff
+		# ld prune
 		Int ldprune_disk
 		Int ldprune_memory
 		Boolean? ldprune_autosome_only
@@ -188,14 +206,21 @@ workflow topmed {
 				memory = vcfgds_memory
 		}
 	}
+	
 	call runUniqueVars {
 		input:
 			gds = runGds.out,
 			debugScript = uniquevars_debug
 	}
-
 	
-
+	scatter(gds in runUniqueVars.out) {
+		call runCheckGds {
+			input:
+				gds = gds,
+				vcfs = vcf_files,
+				debugScript = checkgds_debug
+		}
+	}
 
 	meta {
 		author: "Ash O'Farrell"
