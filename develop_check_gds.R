@@ -8,7 +8,7 @@ gds_file <- args[1]
 vcf_file <- args[2]
 
 sample_file <- NA
-
+chr <- NA
 
 ## vcf file can have two parts split by chromosome identifier
 vcffile <- vcf_file
