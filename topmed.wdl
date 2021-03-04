@@ -5,6 +5,7 @@ version 1.0
 # commented-out things; basically putting the problematic comment in a place Cromwell does
 # not parse.
 
+
 task runGds {
 	input {
 		File vcf
@@ -78,11 +79,14 @@ task runCheckGds {
 
 		echo "Searching for relevent VCF"
 
+		python -v 
+
 		python << CODE
-		for file in ~{sep="," vcfs}:
-			print(file)
-		>>
-		
+		py_vcfarray = [~{sep="," vcfs}]
+		for py_file in py_vcfarray:
+			print(py_file)
+		CODE
+
 		echo "Calling check_gds.R"
 
 		# just pass in one VCF, hopefully the correct one
