@@ -115,7 +115,6 @@ task runCheckMergedGds {
 		memory: "${memory} GB"
 	}
 }
-
 workflow b_ldprune {
 	input {
 		Array[File] gds_files
