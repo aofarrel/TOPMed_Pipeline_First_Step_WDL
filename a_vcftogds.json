@@ -4,7 +4,7 @@
   "a_vcftogds.vcfgds_memory": 10,
   "a_vcftogds.uniquevars_disk": 50,
   "a_vcftogds.uniquevars_memory": 10,
-  "a_vcftogds.uniquevars_debug": "develop_uniqueVariantIDs.R",
+  "a_vcftogds.uniquevars_debug": "develop_unique_variant_ids.R",
   "a_vcftogds.checkgds_disk": 50,
   "a_vcftogds.checkgds_memory": 10,
   "a_vcftogds.checkgds_debug": "develop_check_gds.R"

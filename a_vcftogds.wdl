@@ -61,21 +61,20 @@ task runCheckGds {
 	input {
 		File gds
 		Array[File] vcfs
-		File debugScript
 		# there is a small chance that the vcf2gds sub made more than
 		# one replacement but we're gonna hope that's not the case
 		String gzvcf = basename(sub(gds, "\\.gds$", ".vcf.gz"))
-		# runtime attributes
+		# runtime attr
 		Int disk
 		Int memory
+
+		File debugScript
 	}
 
-	# triple < syntax is required
 	command <<<
+		# triple carrot syntax is required for this command section
 		set -eux -o pipefail
-
 		echo "Searching for VCF"
-
 		# doing this in python is probably not ideal
 		# in fact, this whole block is pretty cursed
 		python << CODE
@@ -89,12 +88,13 @@ task runCheckGds {
 				f.write(py_file)
 				f.close()
 				exit()
-		exit(1) # if we don't find a VCF, fail
+		exit(1)  # if we don't find a VCF, fail
 		CODE
 
 		READFILENAME=$(head correctvcf.txt)
-		echo "Calling check_gds.R"
-		R --vanilla --args "~{gds}" ${READFILENAME} < ~{debugScript}
+		#echo "Calling check_gds.R"
+		#R --vanilla --args "~{gds}" ${READFILENAME} < ~{debugScript}
+		echo "Doing nothing else..."
 	>>>
 
 	runtime {

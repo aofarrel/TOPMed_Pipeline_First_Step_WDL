@@ -1,5 +1,6 @@
 version 1.0
 
+# [4] ldprune -- perform LD pruning
 task runLdPrune{
 	input {
 		# Array version
@@ -41,6 +42,7 @@ task runLdPrune{
 ##goto B
 		#R --vanilla --args ~{sep="," gds} ~{autosome_only} ~{exclude_pca_corr} ~{genome_build} ~{ld_r_threshold} ~{ld_win_size} ~{maf_threshold} ~{missing_threshold} < ~{debugScript}
 
+# [5] subsetGds
 task runSubsetGds {
 	input {
 		File gds
@@ -65,6 +67,7 @@ task runSubsetGds {
 	}
 }
 
+# [6] merge_gds
 task runMergeGds {
 	input {
 		Array[File] gds_array
@@ -91,6 +94,7 @@ task runMergeGds {
 }
 # output should be File out = "merged.gds"
 
+# [7] check_merged_gds
 task runCheckMergedGds {
 	input {
 		Array[File] gds_array
