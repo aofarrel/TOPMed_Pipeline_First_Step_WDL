@@ -62,21 +62,22 @@ Merging and checking merged gds are being worked on.
 Note that b_ldprune.wdl also requires *Array[File]* gds_files because it doesn't run the vcf to gds conversion that topmed.wdl runs.
 
 ### Optional Inputs
-    parameter | type | default value | description
-    --------- | ---- | ------------- | ------------
-	`autosome_only`     | bool | `FALSE` | Only include autosomes in LD pruning.
-	`exclude_pca_corr`  | bool | `TRUE`  | Exclude variants in regions with high correlation with PCs (HLA, LCT, inversions).
-	`genome_build`.     | str  | `hg38` | Genome build, used to define correlation regions.
-	`ld_r_threshold`    | float| `0.32`  | `r` threshold for LD pruning. Default is `r^2 = 0.1`.
-	`ld_win_size`       | int  | `10`    | Sliding window size in Mb for LD pruning.
-	`maf_threshold`     | float| `0.01`  | Minimum MAF for variants used in LD pruning.
-	`missing_threshold` | int  | `0.01`  | Maximum missing call rate for variants.
+| parameter | type | default value | description |
+| --------- | ---- | ------------- | ------------ |
+| autosome_only     | bool | FALSE | Only include autosomes in LD pruning.| 
+| exclude_pca_corr  | bool | TRUE  | Exclude variants in regions with high correlation with PCs (HLA, LCT, inversions).| 
+| genome_build      | str  | hg38 | Genome build, used to define correlation regions.| 
+| ld_r_threshold    | float| 0.32  | r threshold for LD pruning. Default is r^2 = 0.1.| 
+| ld_win_size      | int  | 10    | Sliding window size in Mb for LD pruning.| 
+| maf_threshold     | float| 0.01  | Minimum MAF for variants used in LD pruning.| 
+| missing_threshold | int  | 0.01  | Maximum missing call rate for variants. | 
 
 Be aware that the default for autosome_only is the **opposite** of the default of [the pipeline this is based on](https://github.com/UW-GAC/analysis_pipeline), as it expected users will be inputing one VCF per chr, therefore if they wanted to exclude not-autosomes then they'd have excluded them from the inputs.
 
 ### Outputs
 A Rdata file of the pruned variants and subsetted GDS files.
 
+------
 
 #### Authors
 Contributing authors to the WDLs in this fork include:
