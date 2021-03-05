@@ -68,14 +68,17 @@ task runSubsetGds {
 task runMergeGds {
 	input {
 		Array[File] gds_array
-		String merged_name
+		String merged_name = "merged.gds"
 		# runtime attr
 		Int disk
 		Int memory
+
+		File debugScript
 	}
 	command {
 		set -eux -o pipefail
-		echo "Skipping merge script..."
+		echo "Doing nothing..."
+
 		#echo "Calling R script runMergeGds.R"
 		#R --vanilla --args ~{sep="," gds_array} ~{merged_name} < ~{debugScript}
 	}
@@ -85,18 +88,17 @@ task runMergeGds {
 		bootDiskSizeGb: 6
 		memory: "${memory} GB"
 	}
-	output {
-		File out = "merged.gds"
-	}
 }
+# output should be File out = "merged.gds"
 
 task runCheckMergedGds {
 	input {
 		Array[File] gds_array
-		String merged_name
 		# runtime attr
 		Int disk
 		Int memory
+
+		File debugScript
 	}
 	command {
 		set -eux -o pipefail
