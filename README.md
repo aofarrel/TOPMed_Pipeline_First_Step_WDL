@@ -47,7 +47,8 @@ GDS file matching the name of the input vds with ".gds" appeneded to the end.
 # LD Prune (b_ldprune.wdl)
 This stage automatically takes in the GDS output of the previous step.
 1. ld_pruning.R, based on [UoW ld_pruning.R](https://github.com/UW-GAC/analysis_pipeline/blob/master/R/ld_pruning.R)
-2. The subset_gds.R, based on [UoW subset_gds.R](https://github.com/UW-GAC/analysis_pipeline/blob/master/R/subset_gds.R)
+2. The subset_gds.R, based on [UoW subset_gds.R](https://github.com/UW-GAC/analysis_pipeline/blob/master/R/subset_gds.R)  
+
 Merging and checking merged gds are being worked on.
 
 ### Required Inputs
@@ -58,7 +59,8 @@ Merging and checking merged gds are being worked on.
 * merge_disk
 * merge_memory
 * checkmerged_disk
-* checkmerged_memory
+* checkmerged_memory 
+
 Note that b_ldprune.wdl also requires *Array[File]* gds_files because it doesn't run the vcf to gds conversion that topmed.wdl runs.
 
 ### Optional Inputs
