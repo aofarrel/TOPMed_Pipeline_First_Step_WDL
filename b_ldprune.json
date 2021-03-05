@@ -1,5 +1,5 @@
 {
-  "b_ldprune.gds_files": ["testdata/rawfromgdstovcf-ALL.chr22.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.MAC10.01p.gds", "testdata/rawfromgdstovcf-1KG_phase3_subset_chr21.gds", "testdata/1KG_phase3_subset_chr21.gds"],
+  "b_ldprune.gds_files": ["testdata/rawfromgdstovcf-ALL.chr22.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.MAC10.01p.gds", "testdata/rawfromgdstovcf-1KG_phase3_subset_chr21.gds"],
   "b_ldprune.ldprune_autosome_only": false,
   "b_ldprune.ldprune_exclude_pca_corr": true,
   "b_ldprune.ldprune_genome_build": "hg38",
