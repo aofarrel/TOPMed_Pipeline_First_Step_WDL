@@ -268,6 +268,34 @@ workflow topmed {
 		}
 	}
 
+	scatter(gds_file in runGds.out) { # Comment out for array version
+		call runLdPrune {
+			input:
+				gds = gds_file, # File version
+				#gds = runGds.out, # Array version
+				disk = ldprune_disk,
+				memory = ldprune_memory,
+				autosome_only = select_first([ldprune_autosome_only, false]),
+				exclude_pca_corr = select_first([ldprune_exclude_pca_corr, true]),
+				genome_build = select_first([ldprune_genome_build, "hg38"]),
+				ld_r_threshold = select_first([ldprune_ld_r_threshold, 0.32]),
+				ld_win_size = select_first([ldprune_ld_win_size, 10]),
+				maf_threshold = select_first([ldprune_maf_threshold, 0.01]),
+				missing_threshold = select_first([ldprune_missing_threshold, 0.01])
+		}
+	} 
+
+	scatter(gds_file in runGds.out) {
+		call runSubsetGds {
+			input:
+				gds = gds,
+				vcfs = vcf_files,
+				debugScript = checkgds_debug,
+				disk = checkgds_disk,
+				memory = checkgds_memory
+		}
+	}
+
 	meta {
 		author: "Ash O'Farrell"
 		email: "aofarrel@ucsc.edu"
