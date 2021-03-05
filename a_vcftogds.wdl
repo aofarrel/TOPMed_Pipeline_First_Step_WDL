@@ -32,13 +32,15 @@ task runUniqueVars {
 		File debugScript
 		Int chr_kind = 0
 		String output_file_name = "unique.gds"
-		# runtime attributes
+		# runtime attr
 		Int disk
 		Int memory
+
+		File debugScript
 	}
 	command {
 		set -eux -o pipefail
-		echo "Doing nothing so we can move on to check_gds"
+		echo "Doing nothing..."
 		#echo "Calling uniqueVariantIDs.R"
 		#R --vanilla --args "~{sep="," gds}" ~{chr_kind} < ~{debugScript}
 	}
