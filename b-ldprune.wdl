@@ -114,8 +114,9 @@ workflow topmed {
 	input {
 		Array[File] gds_files
 
-		# R scripts that aren't hardcoded yet
-		File uniquevars_debug
+		# R scripts not already in container
+		File merge_debugScript
+		File checkmerged_debugScript
 
 		# ld prune
 		Boolean? ldprune_autosome_only
@@ -142,11 +143,11 @@ workflow topmed {
 
 	}
 
-	scatter(gds_file in gds_files) { # Comment out for array version
+	scatter(gds_file in runGds.out) { # Comment out for array version
 		call runLdPrune {
 			input:
 				gds = gds_file, # File version
-				#gds = gds_files, # Array version
+				#gds = runGds.out, # Array version
 				disk = ldprune_disk,
 				memory = ldprune_memory,
 				autosome_only = select_first([ldprune_autosome_only, false]),
@@ -157,7 +158,7 @@ workflow topmed {
 				maf_threshold = select_first([ldprune_maf_threshold, 0.01]),
 				missing_threshold = select_first([ldprune_missing_threshold, 0.01])
 		}
-	} 
+	}
 
 	scatter(gds_file in runGds.out) {
 		call runSubsetGds {
@@ -171,18 +172,18 @@ workflow topmed {
 	call runMergeGds {
 		input:
 			gds_array = runSubsetGds.out,
-			merged_name = "merged.gds",
+			debugScript = merge_debugScript,
 			disk = merge_disk,
-			memory = merge_memory,
+			memory = merge_memory
 	}
 
 	call runCheckMergedGds {
 		input:
 			gds_array = runSubsetGds.out,
-			disk = merge_disk,
-			memory = merge_memory,
+			debugScript = checkmerged_debugScript,
+			disk = checkmerged_disk,
+			memory = checkmerged_memory,
 	}
-
 	meta {
 		author: "Ash O'Farrell"
 		email: "aofarrel@ucsc.edu"

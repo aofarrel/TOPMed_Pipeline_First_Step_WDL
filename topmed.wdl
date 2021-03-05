@@ -67,7 +67,7 @@ task runUniqueVars {
 	}
 	command {
 		set -eux -o pipefail
-		echo "Skipping uniqueVariantIDs.R..."
+		echo "Doing nothing..."
 		#echo "Calling uniqueVariantIDs.R"
 		#R --vanilla --args "~{sep="," gds}" ~{chr_kind} < ~{debugScript}
 	}
@@ -121,9 +121,9 @@ task runCheckGds {
 		CODE
 
 		READFILENAME=$(head correctvcf.txt)
-		echo "Calling check_gds.R"
+		#echo "Calling check_gds.R"
 		#R --vanilla --args "~{gds}" ${READFILENAME} < ~{debugScript}
-		echo "Doing nothing so we can move on..."
+		echo "Doing nothing else..."
 	>>>
 
 	runtime {
@@ -216,6 +216,7 @@ task runMergeGds {
 	}
 	command {
 		set -eux -o pipefail
+		echo "Doing nothing..."
 
 		#echo "Calling R script runMergeGds.R"
 		#R --vanilla --args ~{sep="," gds_array} ~{merged_name} < ~{debugScript}
@@ -226,10 +227,8 @@ task runMergeGds {
 		bootDiskSizeGb: 6
 		memory: "${memory} GB"
 	}
-	output {
-		File out = "merged.gds"
-	}
 }
+# output should be File out = "merged.gds"
 
 task runCheckMergedGds {
 	input {
