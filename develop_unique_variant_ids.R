@@ -1,4 +1,4 @@
-# Adapted from TOPMed analysis pipeline
+# Original: https://github.com/aofarrel/analysis_pipeline_WDL/blob/merge-gds/R/unique_variant_ids.R
 
 library(SeqArray)
 library(TopmedPipeline)

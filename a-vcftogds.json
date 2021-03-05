@@ -1,0 +1,11 @@
+{
+  "topmed.vcf_files": ["testdata/ALL.chr22.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.MAC10.01p.vcf.gz", "testdata/1KG_phase3_subset_chr21.vcf.gz"],
+  "topmed.vcfgds_disk": 50,
+  "topmed.vcfgds_memory": 10,
+  "topmed.uniquevars_disk": 50,
+  "topmed.uniquevars_memory": 10,
+  "topmed.uniquevars_debug": "develop_uniqueVariantIDs.R",
+  "topmed.checkgds_disk": 50,
+  "topmed.checkgds_memory": 10,
+  "topmed.checkgds_debug": "develop_check_gds.R"
+}

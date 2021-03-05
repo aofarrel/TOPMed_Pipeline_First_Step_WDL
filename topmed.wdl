@@ -1,39 +1,52 @@
 version 1.0
 
+# --vcf2gds--
+# [1] vcf2gds.R
+#	* fully implemented
+# [2] unique_variant_ids.R
+#	* partially implemented
+# [3] check_gds.R
+#	* partially implemented
+# --ldpruning--
+# [4] ld_pruning.R
+#	* fully implemented
+# [5] subset_gds.R
+#	* fully implemented
+# [6] merge_gds.R
+#	* partially implemented
+# [7] check_merged_gds.R
+#	* skeleton
+#
+# Add'l notes:
 # Cromwell has a bug where it cannot properly recognize certain comments as, well, comments
 # Lines marked with "##goto X" are how I have to keep track of the location of certain
 # commented-out things; basically putting the problematic comment in a place Cromwell does
 # not parse.
 
+# -----------------------------------------------------
+# ------------------------vcf2gds----------------------
+# -----------------------------------------------------
+
 # [1] runGDS -- converts a VCF file into a GDS file
 task runGds {
 	input {
-		# vcf file input
 		File vcf
-
-		# predicted output filename (for now)
 		String output_file_name = basename(sub(vcf, "\\.vcf.gz$", ".gds"))
-
 		# runtime attributes
 		Int disk
 		Int memory
 	}
-	
 	command {
 		set -eux -o pipefail
-
 		echo "Calling R script vcfToGds.R"
-
 		R --vanilla --args "~{vcf}" < /analysis_pipeline_WDL/R/vcf2gds.R
 	}
-
 	runtime {
 		docker: "quay.io/aofarrel/topmed-pipeline-wdl:circleci-push"
 		disks: "local-disk ${disk} SSD"
 		bootDiskSizeGb: 6
 		memory: "${memory} GB"
 	}
-
 	output {
 		File out = output_file_name
 	}
@@ -46,29 +59,24 @@ task runUniqueVars {
 		File debugScript
 		Int chr_kind = 0
 		String output_file_name = "unique.gds"
-
-		# runtime attributes
+		# runtime attr
 		Int disk
 		Int memory
-	}
 
+		File debugScript
+	}
 	command {
 		set -eux -o pipefail
-
-		echo "Doing nothing so we can move on to check_gds"
-
+		echo "Skipping uniqueVariantIDs.R..."
 		#echo "Calling uniqueVariantIDs.R"
-
 		#R --vanilla --args "~{sep="," gds}" ~{chr_kind} < ~{debugScript}
 	}
-
 	runtime {
 		docker: "quay.io/aofarrel/topmed-pipeline-wdl:circleci-push"
 		disks: "local-disk ${disk} SSD"
 		bootDiskSizeGb: 6
 		memory: "${memory} GB"
 	}
-
 	output {
 		##goto C
 		Array[File] out = gds
@@ -82,23 +90,20 @@ task runCheckGds {
 	input {
 		File gds
 		Array[File] vcfs
-		File debugScript
 		# there is a small chance that the vcf2gds sub made more than
 		# one replacement but we're gonna hope that's not the case
 		String gzvcf = basename(sub(gds, "\\.gds$", ".vcf.gz"))
-
-		# runtime attributes
+		# runtime attr
 		Int disk
 		Int memory
+
+		File debugScript
 	}
 
-	# triple < syntax is required
-	# otherwise, READFILENAME is considered undefined
 	command <<<
+		# triple carrot syntax is required for this command section
 		set -eux -o pipefail
-
 		echo "Searching for VCF"
-
 		# doing this in python is probably not ideal
 		# in fact, this whole block is pretty cursed
 		python << CODE
@@ -112,15 +117,13 @@ task runCheckGds {
 				f.write(py_file)
 				f.close()
 				exit()
-		exit(1) # if we don't find a VCF, fail
+		exit(1)  # if we don't find a VCF, fail
 		CODE
 
 		READFILENAME=$(head correctvcf.txt)
-
 		echo "Calling check_gds.R"
-
-		# just pass in one VCF, hopefully the correct one
-		R --vanilla --args "~{gds}" ${READFILENAME} < ~{debugScript}
+		#R --vanilla --args "~{gds}" ${READFILENAME} < ~{debugScript}
+		echo "Doing nothing so we can move on..."
 	>>>
 
 	runtime {
@@ -131,17 +134,17 @@ task runCheckGds {
 	}
 }
 
+# -----------------------------------------------------
+# ------------------------ldprune----------------------
+# -----------------------------------------------------
 
 # [4] ldprune -- perform LD pruning
 task runLdPrune{
 	input {
-
 		# Array version
 		##goto A
-
 		# File version
 		File gds
-
 		# ld prune stuff
 		Boolean autosome_only
 		Boolean exclude_pca_corr
@@ -150,36 +153,27 @@ task runLdPrune{
 		Int ld_win_size
 		Float maf_threshold
 		Float missing_threshold
-
 		# runtime attributes
 		Int disk
 		Int memory
-
 	}
-
 	command {
 		set -eux -o pipefail
-
 		echo "Calling R script ld_pruning.R"
-
 		# File version
 		R --vanilla --args "~{gds}" ~{autosome_only} ~{exclude_pca_corr} ~{genome_build} ~{ld_r_threshold} ~{ld_win_size} ~{maf_threshold} ~{missing_threshold} < /analysis_pipeline_WDL/R/ld_pruning.R
-
 		# Array version
 		##goto B
 	}
-
 	runtime {
 		docker: "quay.io/aofarrel/topmed-pipeline-wdl:circleci-push"
 		disks: "local-disk ${disk} SSD"
 		bootDiskSizeGb: 6
 		memory: "${memory} GB"
 	}
-
 	output {
 		File out = "pruned_variants.RData"
 	}
-
 }
 ##goto A
 		#File gds
@@ -189,33 +183,84 @@ task runLdPrune{
 task runSubsetGds {
 	input {
 		File gds
-		String output_name
+		String output_name = "subsetted.gds"
+		# runtime attr
+		Int disk
+		Int memory
+	}
+	command {
+		set -eux -o pipefail
+		echo "Calling R script runSubsetGds.R"
+		R --vanilla --args "~{gds}" ~{output_name} < /analysis_pipeline_WDL/R/subset_gds.R
+	}
+	runtime {
+		docker: "quay.io/aofarrel/topmed-pipeline-wdl:circleci-push"
+		disks: "local-disk ${disk} SSD"
+		bootDiskSizeGb: 6
+		memory: "${memory} GB"
+	}
+	output {
+		File out = "subsetted.gds"
+	}
+}
+
+task runMergeGds {
+	input {
+		Array[File] gds_array
+		String merged_name = "merged.gds"
+		# runtime attr
+		Int disk
+		Int memory
+
+		File debugScript
 	}
 	command {
 		set -eux -o pipefail
 
-		echo "Calling R script runSubsetGds.R"
-
-		R --vanilla --args "~{gds}" ~{output_name} < /analysis_pipeline_WDL/R/subset_gds.R
+		#echo "Calling R script runMergeGds.R"
+		#R --vanilla --args ~{sep="," gds_array} ~{merged_name} < ~{debugScript}
 	}
-
 	runtime {
 		docker: "quay.io/aofarrel/topmed-pipeline-wdl:circleci-push"
+		disks: "local-disk ${disk} SSD"
+		bootDiskSizeGb: 6
+		memory: "${memory} GB"
 	}
-
 	output {
-		File out = "subsetted.gds"
+		File out = "merged.gds"
 	}
+}
 
+task runCheckMergedGds {
+	input {
+		Array[File] gds_array
+		# runtime attr
+		Int disk
+		Int memory
+
+		File debugScript
+	}
+	command {
+		set -eux -o pipefail
+		echo "Doing nothing..."
+	}
+	runtime {
+		docker: "quay.io/aofarrel/topmed-pipeline-wdl:circleci-push"
+		disks: "local-disk ${disk} SSD"
+		bootDiskSizeGb: 6
+		memory: "${memory} GB"
+	}
 }
 
 workflow topmed {
 	input {
 		Array[File] vcf_files
 
-		# R scripts that aren't hardcoded yet
-		File uniquevars_debug
-		File checkgds_debug
+		# R scripts not already in container
+		File uniquevars_debugScript
+		File checkgds_debugScript
+		File merge_debugScript
+		File checkmerged_debugScript
 
 		# ld prune
 		Boolean? ldprune_autosome_only
@@ -226,20 +271,33 @@ workflow topmed {
 		Float? ldprune_maf_threshold
 		Float? ldprune_missing_threshold
 
-		# [1] vcf2gds runtime attr
+		# runtime attributes
+		# [1] vcf2gds
 		Int vcfgds_disk
 		Int vcfgds_memory
-		# [2] uniquevarids runtime attr
+		# [2] uniquevarids
 		Int uniquevars_disk
 		Int uniquevars_memory
-		# [3] checkgds runtime attr
+		# [3] checkgds
 		Int checkgds_disk
 		Int checkgds_memory
-		# [4] ldprune runtime attr
+		# [4] ldprune
 		Int ldprune_disk
 		Int ldprune_memory
+		# [5] subsetGDS
+		Int subsetgds_disk
+		Int subsetgds_memory
+		# [6] mergeGDS
+		Int merge_disk
+		Int merge_memory
+		# [7] subsetGDS
+		Int checkmerged_disk
+		Int checkmerged_memory
 	}
 
+# -----------------------------------------------------
+# ------------------------vcf2gds----------------------
+# -----------------------------------------------------
 	scatter(vcf_file in vcf_files) {
 		call runGds {
 			input:
@@ -252,7 +310,7 @@ workflow topmed {
 	call runUniqueVars {
 		input:
 			gds = runGds.out,
-			debugScript = uniquevars_debug,
+			debugScript = uniquevars_debugScript,
 			disk = uniquevars_disk,
 			memory = uniquevars_memory
 	}
@@ -262,12 +320,15 @@ workflow topmed {
 			input:
 				gds = gds,
 				vcfs = vcf_files,
-				debugScript = checkgds_debug,
+				debugScript = checkgds_debugScript,
 				disk = checkgds_disk,
 				memory = checkgds_memory
 		}
 	}
 
+# -----------------------------------------------------
+# ------------------------ldprune----------------------
+# -----------------------------------------------------
 	scatter(gds_file in runGds.out) { # Comment out for array version
 		call runLdPrune {
 			input:
@@ -283,17 +344,31 @@ workflow topmed {
 				maf_threshold = select_first([ldprune_maf_threshold, 0.01]),
 				missing_threshold = select_first([ldprune_missing_threshold, 0.01])
 		}
-	} 
+	}
 
 	scatter(gds_file in runGds.out) {
 		call runSubsetGds {
 			input:
-				gds = gds,
-				vcfs = vcf_files,
-				debugScript = checkgds_debug,
+				gds = gds_file,
 				disk = checkgds_disk,
 				memory = checkgds_memory
 		}
+	}
+
+	call runMergeGds {
+		input:
+			gds_array = runSubsetGds.out,
+			debugScript = merge_debugScript,
+			disk = merge_disk,
+			memory = merge_memory
+	}
+
+	call runCheckMergedGds {
+		input:
+			gds_array = runSubsetGds.out,
+			debugScript = checkmerged_debugScript,
+			disk = checkmerged_disk,
+			memory = checkmerged_memory,
 	}
 
 	meta {

@@ -1,3 +1,5 @@
+# Original: https://github.com/aofarrel/analysis_pipeline_WDL/blob/merge-gds/R/check_gds.R
+
 library(TopmedPipeline)
 library(SeqArray)
 library(tools)

@@ -4,10 +4,18 @@
   "topmed.vcfgds_memory": 10,
   "topmed.uniquevars_disk": 50,
   "topmed.uniquevars_memory": 10,
-  "topmed.uniquevars_debug": "develop_uniqueVariantIDs.R",
+  "topmed.uniquevars_debugScript": "develop_unique_variant_ids.R",
   "topmed.checkgds_disk": 50,
   "topmed.checkgds_memory": 10,
-  "topmed.checkgds_debug": "develop_check_gds.R",
+  "topmed.checkgds_debugScript": "develop_check_gds.R",
   "topmed.ldprune_disk": 500,
-  "topmed.ldprune_memory": 10
+  "topmed.ldprune_memory": 10,
+  "topmed.subsetgds_disk": 50,
+  "topmed.subsetgds_memory": 10,
+  "topmed.merge_disk": 50,
+  "topmed.merge_memory": 10,
+  "topmed.merge_debugScript": "develop_merge_gds.R",
+  "topmed.checkmerged_disk": 50,
+  "topmed.checkmerged_memory": 10,
+  "topmed.checkmerged_debugScript": "develop_check_merged_gds.R"
 }
