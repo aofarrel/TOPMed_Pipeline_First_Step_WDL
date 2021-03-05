@@ -16,6 +16,17 @@ version 1.0
 #	* partially implemented
 # [7] check_merged_gds.R
 #	* skeleton
+# --king--
+# [8] gds2bed.R
+#	* skeleton
+# [9] plink --make-bed
+#	* skeleton
+# [10] king --ibdseg
+#	* skeleton
+# [11] kinship_plots.R
+#	* skeleton
+# [12] king_to_matrix.R
+#	* skeleton
 #
 # Add'l notes:
 # Cromwell has a bug where it cannot properly recognize certain comments as, well, comments
@@ -254,15 +265,140 @@ task runCheckMergedGds {
 	}
 }
 
+# -----------------------------------------------------
+# -------------------------king------------------------
+# -----------------------------------------------------
+
+# [8] gds2bed
+task runGdsToBed {
+	input {
+		File gds
+		String bed
+		# runtime attr
+		Int disk
+		Int memory
+
+		File debugScript
+	}
+	command {
+		set -eux -o pipefail
+		echo "Calling R script gds2bed.R"
+		R --vanilla --args ~{gds} ~{bed} < ~{debugScript}
+	}
+	runtime {
+		docker: "quay.io/aofarrel/topmed-pipeline-wdl:circleci-push"
+		disks: "local-disk ${disk} SSD"
+		bootDiskSizeGb: 6
+		memory: "${memory} GB"
+	}
+	output {
+		File out = bed
+	}
+}
+
+# [9] plink
+task runPLINK {
+	input {
+		File bed
+		# runtime attr
+		Int disk
+		Int memory
+	}
+	command {
+		set -eux -o pipefail
+		echo "Doing nothing..."
+	}
+	runtime {
+		docker: "quay.io/aofarrel/topmed-pipeline-wdl:circleci-push"
+		disks: "local-disk ${disk} SSD"
+		bootDiskSizeGb: 6
+		memory: "${memory} GB"
+	}
+}
+
+# [10] KING
+task runKING {
+	input {
+		File bed
+		# runtime attr
+		Int disk
+		Int memory
+	}
+	command {
+		set -eux -o pipefail
+		echo "Doing nothing..."
+	}
+	runtime {
+		docker: "quay.io/aofarrel/topmed-pipeline-wdl:circleci-push"
+		disks: "local-disk ${disk} SSD"
+		bootDiskSizeGb: 6
+		memory: "${memory} GB"
+	}
+}
+
+# [11] kinship plots
+task runKinship {
+	input {
+		File bed
+		# runtime attr
+		Int disk
+		Int memory
+
+		File debugScript
+	}
+	command {
+		set -eux -o pipefail
+		echo "Doing nothing..."
+	}
+	runtime {
+		docker: "quay.io/aofarrel/topmed-pipeline-wdl:circleci-push"
+		disks: "local-disk ${disk} SSD"
+		bootDiskSizeGb: 6
+		memory: "${memory} GB"
+	}
+}
+
+# [12] kingtomatrix
+task runMatrix {
+	input {
+		File bed
+		# runtime attr
+		Int disk
+		Int memory
+
+		File debugScript
+	}
+	command {
+		set -eux -o pipefail
+		echo "Doing nothing..."
+	}
+	runtime {
+		docker: "quay.io/aofarrel/topmed-pipeline-wdl:circleci-push"
+		disks: "local-disk ${disk} SSD"
+		bootDiskSizeGb: 6
+		memory: "${memory} GB"
+	}
+}
+
+
 workflow topmed {
 	input {
 		Array[File] vcf_files
+
+		# a singular GDS file for the KING scripts
+		# this should be removed once debugging is complete
+ 		File debug_singularGDS
+
+ 		String gdstobed_bed_filename
 
 		# R scripts not already in container
 		File uniquevars_debugScript
 		File checkgds_debugScript
 		File merge_debugScript
 		File checkmerged_debugScript
+		File gdstobed_debugScript
+		File kinship_debugScript
+		File matrix_debugScript
 
 		# ld prune
 		Boolean? ldprune_autosome_only
@@ -295,6 +431,21 @@ workflow topmed {
 		# [7] subsetGDS
 		Int checkmerged_disk
 		Int checkmerged_memory
+		# [8] gdstobed
+		Int gdstobed_disk
+		Int gdstobed_memory
+		# [9] PLINK
+		Int plink_disk
+		Int plink_memory
+		# [10] KING
+		Int king_disk
+		Int king_memory
+		# [11] kinship
+		Int kinship_disk
+		Int kinship_memory
+		# [12] matrix
+		Int matrix_disk
+		Int matrix_memory
 	}
 
 # -----------------------------------------------------
@@ -372,6 +523,49 @@ workflow topmed {
 			disk = checkmerged_disk,
 			memory = checkmerged_memory,
 	}
+# -----------------------------------------------------
+# -------------------------king------------------------
+# -----------------------------------------------------
+
+# Currently this part of the pipeline has bogus inputs
+# 	call runGdsToBed {
+# 		input:
+# 			gds = debug_singularGDS,
+# 			bed = gdstobed_bed_filename,
+# 			debugScript = gdstobed_debugScript,
+# 			disk = gdstobed_disk,
+# 			memory = gdstobed_memory
+# 	}
+
+# 	call runPLINK {
+# 		input:
+# 			bed = runGdsToBed.out,
+# 			disk = plink_disk,
+# 			memory = plink_memory
+# 	}
+
+# 	call runKING {
+# 		input:
+# 			bed = runPLINK.out,
+# 			disk = king_disk,
+# 			memory = king_memory
+# 	}
+
+# 	call runKinship {
+# 		input:
+# 			bed = runSubsetGds.out, #very bogus
+# 			debugScript = kinship_debugScript,
+# 			disk = kinship_disk,
+# 			memory = kinship_memory,
+# 	}
+
+# 	call runMatrix {
+# 		input:
+# 			bed = runSubsetGds.out, #very bogus
+# 			debugScript = matrix_debugScript,
+# 			disk = matrix_disk,
+# 			memory = matrix_memory,
+# 	}
 
 	meta {
 		author: "Ash O'Farrell"

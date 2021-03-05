@@ -1,0 +1,14 @@
+{ "topmed.gdstobed_debugScript": "develop_gds2bed.R",
+  "topmed.gdstobed_disk": 50,
+  "topmed.gdstobed_memory": 10,
+  "topmed.plink_disk": 50,
+  "topmed.plink_memoruy": 10,
+  "topmed.king_disk": 50,
+  "topmed.king_memory": 10,
+  "topmed.kinship_debugScript": "develop_kinship_plots.R",
+  "topmed.kinship_disk": 50,
+  "topmed.kinship_memory": 10,
+  "topmed.matrix_debugScript": "develop_king_to_matrix.R",
+  "topmed.matrix_disk": 50,
+  "topmed.matrix_memory": 100
+}
