@@ -144,12 +144,12 @@ workflow b_ldprune {
 		Int merge_disk
 		Int merge_memory
 		# [7] checkmergedgds
-		Int checkmerge_disk
-		Int checkmerge_memory
+		Int checkmerged_disk
+		Int checkmerged_memory
 
 	}
 
-	scatter(gds_file in runGds.out) { # Comment out for array version
+	scatter(gds_file in gds_files) { # Comment out for array version
 		call runLdPrune {
 			input:
 				gds = gds_file, # File version
@@ -166,12 +166,12 @@ workflow b_ldprune {
 		}
 	}
 
-	scatter(gds_file in runGds.out) {
+	scatter(gds_file in gds_files) {
 		call runSubsetGds {
 			input:
 				gds = gds_file,
-				disk = checkgds_disk,
-				memory = checkgds_memory
+				disk = subsetgds_disk,
+				memory = subsetgds_memory
 		}
 	}
 

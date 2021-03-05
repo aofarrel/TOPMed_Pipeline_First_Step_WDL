@@ -352,8 +352,8 @@ workflow topmed {
 		call runSubsetGds {
 			input:
 				gds = gds_file,
-				disk = checkgds_disk,
-				memory = checkgds_memory
+				disk = subsetgds_disk,
+				memory = subsetgds_memory
 		}
 	}
 
