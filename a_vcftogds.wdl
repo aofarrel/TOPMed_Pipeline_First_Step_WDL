@@ -2,7 +2,10 @@ version 1.0
 
 task generateConfig {
 	input {
-		Array [File] vcfs
+		File vcf
+		# runtime attributes
+		Int disk
+		Int memory
 	}
 
 	command {
@@ -11,42 +14,42 @@ task generateConfig {
 		f = open("megastep_A.config", "a")
 		f.write("outprefix test\nvcf_file ")
 
-		py_vcfarray = ['~{sep="','" vcfs}']
-		for py_file in py_vcfarray:
-			py_base = os.path.basename(py_file)
-			f.write('"')
-			f.write(py_file)
-			f.write('",')
-		f.close()
-		# delete last extra comma
-		theStorySoFar = open("megastep_A.config").read()
-		os.remove("megastep_A.config")
-		f = open("megastep_A.config", "a")
-		f.write(theStorySoFar[:-1])
+		# ARRAY VERSION
+		##goto A
+
+		# SINGLE FILE VERSION
+		f.write(os.path.basename("~{vcf}"))
 
 		# add last two lines
-		f = open("megastep_A.config", "a")
 		f.write("\ngds_file 'gdsfile_chr .gds'\n")
 		f.write("merged_gds_file 'merged.gds'")
 		f.close()
 		exit()
 		CODE
-
-		#out_prefix test
-		#vcf_file "testdata/1KG_phase3_subset_chr .vcf.gz"
-		#gds_file "1KG_phase3_subset_chr .gds"
-		#merged_gds_file "1KG_phase3_subset.gds"
 	}
 	runtime {
 		docker: "uwgac/topmed-master:latest"
-		#disks: "local-disk ${disk} SSD"
-		#bootDiskSizeGb: 6
-		#memory: "${memory} GB"
+		disks: "local-disk ${disk} SSD"
+		bootDiskSizeGb: 6
+		memory: "${memory} GB"
 	}
 	output {
 		File config_megastep_A = "megastep_A.config"
 	}
 }
+##goto A
+#py_vcfarray = ['~{sep="','" vcfs}']
+#for py_file in py_vcfarray:
+	#py_base = os.path.basename(py_file)
+	#f.write('"')
+	#f.write(py_file)
+	#f.write('",')
+#f.close()
+## delete last extra comma
+#theStorySoFar = open("megastep_A.config").read()
+#os.remove("megastep_A.config")
+#f = open("megastep_A.config", "a")
+#f.write(theStorySoFar[:-1])
 
 # [1] runGDS -- converts a VCF file into a GDS file
 task runGds {
@@ -154,6 +157,9 @@ workflow a_vcftogds {
 		Array[File] vcf_files
 
 		# runtime attributes
+		# configuration file generator
+		Int config_disk = 1
+		Int config_memory = 1
 		# [1] vcf2gds
 		Int vcfgds_disk
 		Int vcfgds_memory
@@ -165,13 +171,13 @@ workflow a_vcftogds {
 		Int checkgds_memory
 	}
 
-	call generateConfig {
-		input:
-			vcfs = vcf_files
-	}
-
-	# if reading from config file this ideally should not be 
 	scatter(vcf_file in vcf_files) {
+		call generateConfig {
+			input:
+				vcf = vcf_file,
+				disk = config_disk,
+				memory = config_memory
+		}
 		call runGds {
 			input:
 				config = generateConfig.config_megastep_A,
