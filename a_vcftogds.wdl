@@ -52,9 +52,8 @@ task runUniqueVars {
 	}
 	command {
 		set -eux -o pipefail
-		echo "Doing nothing..."
-		#echo "Calling uniqueVariantIDs.R"
-		#R --vanilla --args "~{sep="," gds}" ~{chr_kind} < /usr/local/analysis_pipeline/R/unique_variant_ids.R
+		echo "Calling uniqueVariantIDs.R"
+		Rscript /usr/local/analysis_pipeline/R/unique_variant_ids.R unique_variant_ids.config
 	}
 	runtime {
 		docker: "uwgac/topmed-master:latest"
