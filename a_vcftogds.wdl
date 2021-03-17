@@ -1,8 +1,57 @@
 version 1.0
 
+task generateConfig {
+	input {
+		Array [File] vcfs
+	}
+
+	command {
+		python << CODE
+		import os
+		f = open("megastep_A.config", "a")
+		f.write("outprefix test\nvcf_file ")
+
+		py_vcfarray = ['~{sep="','" vcfs}']
+		for py_file in py_vcfarray:
+			py_base = os.path.basename(py_file)
+			f.write('"')
+			f.write(py_file)
+			f.write('",')
+		f.close()
+		# delete last extra comma
+		theStorySoFar = open("megastep_A.config").read()
+		os.remove("megastep_A.config")
+		f = open("megastep_A.config", "a")
+		f.write(theStorySoFar[:-1])
+
+		# add last two lines
+		f = open("megastep_A.config", "a")
+		f.write("\ngds_file 'gdsfile_chr .gds'\n")
+		f.write("merged_gds_file 'merged.gds'")
+		f.close()
+		exit()
+		CODE
+
+		#out_prefix test
+		#vcf_file "testdata/1KG_phase3_subset_chr .vcf.gz"
+		#gds_file "1KG_phase3_subset_chr .gds"
+		#merged_gds_file "1KG_phase3_subset.gds"
+	}
+	runtime {
+		docker: "uwgac/topmed-master:latest"
+		#disks: "local-disk ${disk} SSD"
+		#bootDiskSizeGb: 6
+		#memory: "${memory} GB"
+	}
+	output {
+		File config_megastep_A = "megastep_A.config"
+	}
+}
+
 # [1] runGDS -- converts a VCF file into a GDS file
 task runGds {
 	input {
+		File config
 		File vcf
 		String output_file_name = basename(sub(vcf, "\\.vcf.gz$", ".gds"))
 		# runtime attributes
@@ -12,10 +61,10 @@ task runGds {
 	command {
 		set -eux -o pipefail
 		echo "Calling R script vcfToGds.R"
-		R --vanilla --args "~{vcf}" < /analysis_pipeline_WDL/R/vcf2gds.R
+		Rscript /usr/local/analysis_pipeline/R/vcf2gds.R ~{config}
 	}
 	runtime {
-		docker: "quay.io/aofarrel/topmed-pipeline-wdl:circleci-push"
+		docker: "uwgac/topmed-master:latest"
 		disks: "local-disk ${disk} SSD"
 		bootDiskSizeGb: 6
 		memory: "${memory} GB"
@@ -29,34 +78,28 @@ task runGds {
 task runUniqueVars {
 	input {
 		Array[File] gds
-		File debugScript
 		Int chr_kind = 0
 		String output_file_name = "unique.gds"
 		# runtime attr
 		Int disk
 		Int memory
-
-		File debugScript
 	}
 	command {
 		set -eux -o pipefail
 		echo "Doing nothing..."
 		#echo "Calling uniqueVariantIDs.R"
-		#R --vanilla --args "~{sep="," gds}" ~{chr_kind} < ~{debugScript}
+		#R --vanilla --args "~{sep="," gds}" ~{chr_kind} < /usr/local/analysis_pipeline/R/unique_variant_ids.R
 	}
 	runtime {
-		docker: "quay.io/aofarrel/topmed-pipeline-wdl:circleci-push"
+		docker: "uwgac/topmed-master:latest"
 		disks: "local-disk ${disk} SSD"
 		bootDiskSizeGb: 6
 		memory: "${memory} GB"
 	}
 	output {
-		##goto C
-		Array[File] out = gds
+		Array[File] out = output_file_name
 	}
 }
-##goto C
-# should be Array[File] out = output_file_name
 
 # [3] checkGDS - check a GDS file against its supposed VCF input
 task runCheckGds {
@@ -69,8 +112,6 @@ task runCheckGds {
 		# runtime attr
 		Int disk
 		Int memory
-
-		File debugScript
 	}
 
 	command <<<
@@ -90,17 +131,18 @@ task runCheckGds {
 				f.write(py_file)
 				f.close()
 				exit()
+		print("Failed to find a matching VCF")
 		exit(1)  # if we don't find a VCF, fail
 		CODE
 
 		READFILENAME=$(head correctvcf.txt)
 		#echo "Calling check_gds.R"
-		#R --vanilla --args "~{gds}" ${READFILENAME} < ~{debugScript}
+		#R --vanilla --args "~{gds}" ${READFILENAME} < /usr/local/analysis_pipeline/R/check_gds.R
 		echo "Doing nothing else..."
 	>>>
 
 	runtime {
-		docker: "quay.io/aofarrel/topmed-pipeline-wdl:circleci-push"
+		docker: "uwgac/topmed-master:latest"
 		disks: "local-disk ${disk} SSD"
 		bootDiskSizeGb: 6
 		memory: "${memory} GB"
@@ -110,10 +152,6 @@ task runCheckGds {
 workflow a_vcftogds {
 	input {
 		Array[File] vcf_files
-
-		# R scripts that aren't hardcoded yet
-		File uniquevars_debug
-		File checkgds_debug
 
 		# runtime attributes
 		# [1] vcf2gds
@@ -127,9 +165,16 @@ workflow a_vcftogds {
 		Int checkgds_memory
 	}
 
+	call generateConfig {
+		input:
+			vcfs = vcf_files
+	}
+
+	# if reading from config file this ideally should not be 
 	scatter(vcf_file in vcf_files) {
 		call runGds {
 			input:
+				config = generateConfig.config_megastep_A,
 				vcf = vcf_file,
 				disk = vcfgds_disk,
 				memory = vcfgds_memory
@@ -139,7 +184,6 @@ workflow a_vcftogds {
 	call runUniqueVars {
 		input:
 			gds = runGds.out,
-			debugScript = uniquevars_debug,
 			disk = uniquevars_disk,
 			memory = uniquevars_memory
 	}
@@ -149,7 +193,6 @@ workflow a_vcftogds {
 			input:
 				gds = gds,
 				vcfs = vcf_files,
-				debugScript = checkgds_debug,
 				disk = checkgds_disk,
 				memory = checkgds_memory
 		}
