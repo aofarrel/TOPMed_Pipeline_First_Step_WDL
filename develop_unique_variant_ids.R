@@ -61,19 +61,23 @@ seqClose(gds.list[[1]])
 # It is var.length(c) that is NA and causing this error
 ######################## debug zone ########################
 
-print(paste0("chr", chr))
+print(paste0("chr = ", chr))
 id.new <- list(1:var.length[1])
-print(paste0("var.length[1]", var.length[1]))
-print(paste0("length(chr)", length(chr)))
+print(paste0("var.length[1] = ", var.length[1]))
+print(paste0("length(chr) = ", length(chr)))
 for (c in 2:length(chr)) {
-    print(paste0("c", c))
+    print(paste0("c = ", c))
     id.prev <- id.new[[c-1]]
     last.id <- id.prev[length(id.prev)]
-    #message("id.prev")
-    #message(id.prev)
-    print(paste0("last.id", last.id))
-    print(paste0("var.length[c]", var.length[c]))
-    id.new[[c]] <- (last.id + 1):(last.id + var.length[c]) # crash because var.length[c] is NA
+    print(paste0("last.id = ", last.id))
+    print(paste0("var.length[c] = ", var.length[c]))
+    print((paste0("last.id is NA? ", is.na(last.id))))
+    print((paste0("var.length[c] is NA? ", is.na(var.length[c]))))
+    stopifnot(!is.na(var.length[c]))
+    #id.new[[c]] <- (last.id + 1):(last.id + var.length[c]) # crash because var.length[c] is NA
+    id.new[[c]] <- (last.id + 1):(last.id + c) # test
+    #print(paste0("id.new[[c]] = ", id.new[[c]]))    
+    print(paste0("new var.length[c] = ", var.length[c]))
     stopifnot(length(id.new[[c]]) == var.length[c])
 }
 ######################## debug zone ########################

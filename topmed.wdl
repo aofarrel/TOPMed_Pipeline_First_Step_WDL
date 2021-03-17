@@ -78,9 +78,9 @@ task runUniqueVars {
 	}
 	command {
 		set -eux -o pipefail
-		echo "Doing nothing..."
-		#echo "Calling uniqueVariantIDs.R"
-		#R --vanilla --args "~{sep="," gds}" ~{chr_kind} < ~{debugScript}
+		#echo "Doing nothing..."
+		echo "Calling uniqueVariantIDs.R"
+		R --vanilla --args "~{sep="," gds}" ~{chr_kind} < ~{debugScript}
 	}
 	runtime {
 		docker: "quay.io/aofarrel/topmed-pipeline-wdl:circleci-push"
@@ -89,12 +89,9 @@ task runUniqueVars {
 		memory: "${memory} GB"
 	}
 	output {
-		##goto C
-		Array[File] out = gds
+		Array[File] out = output_file_name
 	}
 }
-##goto C
-# should be Array[File] out = output_file_name
 
 # [3] checkGDS - check a GDS file against its supposed VCF input
 task runCheckGds {
