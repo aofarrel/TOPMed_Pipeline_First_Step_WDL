@@ -1,60 +1,8 @@
 version 1.0
 
-task generateConfig {
-	input {
-		File vcf
-		# runtime attributes
-		Int disk
-		Int memory
-	}
-
-	command {
-		python << CODE
-		import os
-		f = open("megastep_A.config", "a")
-		f.write("outprefix test\nvcf_file ")
-
-		# ARRAY VERSION
-		##goto A
-
-		# SINGLE FILE VERSION
-		f.write(os.path.basename("~{vcf}"))
-
-		# add last two lines
-		f.write("\ngds_file 'gdsfile_chr .gds'\n")
-		f.write("merged_gds_file 'merged.gds'")
-		f.close()
-		exit()
-		CODE
-	}
-	runtime {
-		docker: "uwgac/topmed-master:latest"
-		disks: "local-disk ${disk} SSD"
-		bootDiskSizeGb: 6
-		memory: "${memory} GB"
-	}
-	output {
-		File config_megastep_A = "megastep_A.config"
-	}
-}
-##goto A
-#py_vcfarray = ['~{sep="','" vcfs}']
-#for py_file in py_vcfarray:
-	#py_base = os.path.basename(py_file)
-	#f.write('"')
-	#f.write(py_file)
-	#f.write('",')
-#f.close()
-## delete last extra comma
-#theStorySoFar = open("megastep_A.config").read()
-#os.remove("megastep_A.config")
-#f = open("megastep_A.config", "a")
-#f.write(theStorySoFar[:-1])
-
 # [1] runGDS -- converts a VCF file into a GDS file
 task runGds {
 	input {
-		File config
 		File vcf
 		String output_file_name = basename(sub(vcf, "\\.vcf.gz$", ".gds"))
 		# runtime attributes
@@ -62,9 +10,24 @@ task runGds {
 		Int memory
 	}
 	command {
+		# Generate config used by the R script
+		# Must be done in this task or else this task will fail to find the inputs
+		# regardless of whether we save full path or use os.path.basename
+		python << CODE
+		import os
+		f = open("megastep_A.config", "a")
+		f.write("outprefix test\nvcf_file ")
+		f.write("~{vcf}")
+		f.write("\ngds_file '~{output_file_name}'\n")
+		f.write("merged_gds_file 'merged.gds'")
+		f.close()
+		exit()
+		CODE
+
+		# Call R script to actually do the conversion
 		set -eux -o pipefail
 		echo "Calling R script vcfToGds.R"
-		Rscript /usr/local/analysis_pipeline/R/vcf2gds.R ~{config}
+		Rscript /usr/local/analysis_pipeline/R/vcf2gds.R "megastep_A.config"
 	}
 	runtime {
 		docker: "uwgac/topmed-master:latest"
@@ -172,15 +135,8 @@ workflow a_vcftogds {
 	}
 
 	scatter(vcf_file in vcf_files) {
-		call generateConfig {
-			input:
-				vcf = vcf_file,
-				disk = config_disk,
-				memory = config_memory
-		}
 		call runGds {
 			input:
-				config = generateConfig.config_megastep_A,
 				vcf = vcf_file,
 				disk = vcfgds_disk,
 				memory = vcfgds_memory
