@@ -1,7 +1,7 @@
 version 1.0
 
-# [1] runGDS -- converts a VCF file into a GDS file
-task runGds {
+# [1] vcf2gds -- converts a VCF file into a GDS file
+task vcf2gds {
 	input {
 		File vcf
 		String output_file_name = basename(sub(vcf, "\\.vcf.gz$", ".gds"))
@@ -10,7 +10,8 @@ task runGds {
 		Int memory
 	}
 	command {
-		#set -eux -o pipefail
+		set -eux -o pipefail
+
 		# Generate config used by the R script
 		# Must be done in this task or else this task will fail to find the inputs
 		# regardless of whether we save full path or use os.path.basename
@@ -18,22 +19,6 @@ task runGds {
 		echo "Generating config file"
 		python << CODE
 		import os
-		def find_chromsome(somefile):
-			chr_array = []
-			chrom_num = somefile.split("chr")[1]
-
-			if isNumeric(chrom_num.charAt(1)):
-				chr_array.push(chrom_num.substr(0,2))
-			else:
-				chr_array.push(chrom_num.substr(0,1))
-			return "".join(chr_array)
-
-
-		config = ""
-		config += "vcf_file \"" + ~{vcf} + "\"\n"
-
-
-
 		f = open("megastep_A.config", "a")
 		f.write("outprefix test\nvcf_file ")
 		f.write("~{vcf}")
@@ -60,7 +45,7 @@ task runGds {
 }
 
 # [2] uniqueVars -- attempts to give unique variant IDS
-task runUniqueVars {
+task unique_variant_id {
 	input {
 		Array[File] gdss
 		Int chr_kind = 0
@@ -68,10 +53,16 @@ task runUniqueVars {
 		Int disk
 		Int memory
 	}
-	command {
+	command <<<
 		set -eux -o pipefail
-
 		echo "Copying inputs into the workdir"
+		# cannot for the life of me figure out how to do this in bash
+		# without cromwell throwing a syntax error
+		BASH_INPUT1="{"
+		BASH_INPUT2="~{sep="," gdss}"
+		BASH_INPUT3=$(printf "\x$(printf %x 125)")
+		BASH_INPUT="$BASH_INPUT1$BASH_INPUT2$BASH_INPUT3"
+		cp "${BASH_INPUT}" .
 
 		# generate config used by the R script
 		# must be done in this task or else this task will fail to find the inputs
@@ -123,12 +114,9 @@ task runUniqueVars {
 		f.close()
 		exit()
 		CODE
-
-
 		echo "Calling uniqueVariantIDs.R"
-		
 		Rscript /usr/local/analysis_pipeline/R/unique_variant_ids.R unique_variant_ids.config
-	}
+	>>>
 	runtime {
 		docker: "uwgac/topmed-master:2.8.1"
 		disks: "local-disk ${disk} SSD"
@@ -141,7 +129,7 @@ task runUniqueVars {
 }
 
 # [3] checkGDS - check a GDS file against its supposed VCF input
-task runCheckGds {
+task check_gds {
 	input {
 		File gds
 		Array[File] vcfs
@@ -215,7 +203,7 @@ workflow a_vcftogds {
 	}
 
 	scatter(vcf_file in vcf_files) {
-		call runGds {
+		call vcf2gds {
 			input:
 				vcf = vcf_file,
 				disk = vcfgds_disk,
@@ -223,18 +211,16 @@ workflow a_vcftogds {
 		}
 	}
 	
-	#call runUniqueVars {
-		#input:
-			##gdss = bogus_gds_inputs,
-			#gdss = runGds.out,
-			#disk = uniquevars_disk,
-			#memory = uniquevars_memory
-	#}
+	call unique_variant_id {
+		input:
+			gdss = vcf2gds.out,
+			disk = uniquevars_disk,
+			memory = uniquevars_memory
+	}
 	
-	#if runCheckGds
-	#scatter(gds in bogus_gds_inputs) {
-	#scatter(gds in runUniqueVars.out) {
-		#call runCheckGds {
+	#if check_gds
+	#scatter(gds in unique_variant_id.out) {
+		#call check_gds {
 			#input:
 				#gds = gds,
 				#vcfs = vcf_files,
