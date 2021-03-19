@@ -10,6 +10,7 @@ task runGds {
 		Int memory
 	}
 	command {
+		set -eux -o pipefail
 		# Generate config used by the R script
 		# Must be done in this task or else this task will fail to find the inputs
 		# regardless of whether we save full path or use os.path.basename
@@ -43,16 +44,45 @@ task runGds {
 # [2] uniqueVars -- attempts to give unique variant IDS
 task runUniqueVars {
 	input {
-		Array[File] gds
+		Array[File] gdss
 		Int chr_kind = 0
-		String output_file_name = "unique.gds"
 		# runtime attr
 		Int disk
 		Int memory
 	}
 	command {
 		set -eux -o pipefail
+
+		# Generate config used by the R script
+		# Must be done in this task or else this task will fail to find the inputs
+		# regardless of whether we save full path or use os.path.basename
+		python << CODE
+		import os
+		py_gdsarray = ['~{sep="','" gdss}']
+		py_gdsarray.sort() # diff backends feed in files differently
+		print(py_gdsarray)
+		f = open("unique_variant_ids.config", "a")
+		f.write("outprefix test")
+		f.write("\nvcf_file this_is_a_bogus_name.vcf")
+		f.write("\ngds_file ")
+		py_listicle = []
+		# because we sorted the array, 0 and 11 should be chr1 and chr2 respectively
+		for charA, charB in zip(py_gdsarray[0], py_gdsarray[11]):
+			if charA == charB:
+				py_listicle.append(charA)
+			else:
+				py_listicle.append(" ")
+		py_name = "".join(py_listicle)
+		f.write("'")
+		f.write(py_name)
+		f.write("'")
+		f.write("\nmerged_gds_file 'merged.gds'\n")
+		f.close()
+		exit()
+		CODE
+
 		echo "Calling uniqueVariantIDs.R"
+		
 		Rscript /usr/local/analysis_pipeline/R/unique_variant_ids.R unique_variant_ids.config
 	}
 	runtime {
@@ -62,7 +92,7 @@ task runUniqueVars {
 		memory: "${memory} GB"
 	}
 	output {
-		Array[File] out = output_file_name
+		Array[File] out = glob("*.gds")
 	}
 }
 
@@ -90,20 +120,26 @@ task runCheckGds {
 		py_vcfarray = ['~{sep="','" vcfs}']
 		for py_file in py_vcfarray:
 			py_base = os.path.basename(py_file)
+			print("--")
+			print(py_base)
+			print("~{gzvcf}")
+			print("--")
 			if(py_base == "~{gzvcf}"):
-				print("Yep!")
-				f = open("correctvcf.txt", "a")
+				f = open("checkgds.config", "a")
+				f.write("outprefix test")
+				f.write("\nvcf_file ")
 				f.write(py_file)
+				f.write("\ngds_file ")
+				f.write("'~{gds}'")
+				f.write("\nmerged_gds_file 'merged.gds'\n")
 				f.close()
 				exit()
 		print("Failed to find a matching VCF")
 		exit(1)  # if we don't find a VCF, fail
 		CODE
 
-		READFILENAME=$(head correctvcf.txt)
-		#echo "Calling check_gds.R"
-		#R --vanilla --args "~{gds}" ${READFILENAME} < /usr/local/analysis_pipeline/R/check_gds.R
-		echo "Doing nothing else..."
+		echo "Calling check_gds.R"
+		Rscript /usr/local/analysis_pipeline/R/check_gds.R checkgds.config
 	>>>
 
 	runtime {
@@ -118,10 +154,10 @@ workflow a_vcftogds {
 	input {
 		Array[File] vcf_files
 
+		# debug
+		Array[File] bogus_gds_inputs
+
 		# runtime attributes
-		# configuration file generator
-		Int config_disk = 1
-		Int config_memory = 1
 		# [1] vcf2gds
 		Int vcfgds_disk
 		Int vcfgds_memory
@@ -133,23 +169,27 @@ workflow a_vcftogds {
 		Int checkgds_memory
 	}
 
-	scatter(vcf_file in vcf_files) {
-		call runGds {
-			input:
-				vcf = vcf_file,
-				disk = vcfgds_disk,
-				memory = vcfgds_memory
-		}
-	}
+	# fails on provided test data, something about sampleID
+	# but works on... not test data???
+	#scatter(vcf_file in bogus_vcf_inputs) {
+		#call runGds {
+			#input:
+				#vcf = vcf_file,
+				#disk = vcfgds_disk,
+				#memory = vcfgds_memory
+		#}
+	#}
 	
 	call runUniqueVars {
 		input:
-			gds = runGds.out,
+			gdss = bogus_gds_inputs,
+			#gdss = runGds.out,
 			disk = uniquevars_disk,
 			memory = uniquevars_memory
 	}
 	
-	scatter(gds in runUniqueVars.out) {
+	scatter(gds in bogus_gds_inputs) {
+	#scatter(gds in runUniqueVars.out) {
 		call runCheckGds {
 			input:
 				gds = gds,
