@@ -14,6 +14,8 @@ task runGds {
 		# Generate config used by the R script
 		# Must be done in this task or else this task will fail to find the inputs
 		# regardless of whether we save full path or use os.path.basename
+
+		echo "Generating config file"
 		python << CODE
 		import os
 		f = open("megastep_A.config", "a")
@@ -53,20 +55,24 @@ task runUniqueVars {
 	command {
 		set -eux -o pipefail
 
-		# Generate config used by the R script
-		# Must be done in this task or else this task will fail to find the inputs
+		# generate config used by the R script
+		# must be done in this task or else this task will fail to find the inputs
 		# regardless of whether we save full path or use os.path.basename
+		echo "Generating config file"
 		python << CODE
 		import os
 		py_gdsarray = ['~{sep="','" gdss}']
-		py_gdsarray.sort() # diff backends feed in files differently
-		print(py_gdsarray)
-		f = open("unique_variant_ids.config", "a")
+
+		# diff backends feed in files differently so we need to sort due to later assumption
+		py_gdsarray.sort()
+
+		f = open("unique_variant_ids.config", "a") # yeah yeah yeah this should be with open() I know
 		f.write("outprefix test")
 		f.write("\nvcf_file this_is_a_bogus_name.vcf")
 		f.write("\ngds_file ")
 		py_listicle = []
-		# because we sorted the array, 0 and 11 should be chr1 and chr2 respectively
+
+		# because we sorted the array, indexes 0 and 11 should be chr1 and chr2 respectively
 		for charA, charB in zip(py_gdsarray[0], py_gdsarray[11]):
 			if charA == charB:
 				py_listicle.append(charA)
@@ -112,7 +118,7 @@ task runCheckGds {
 	command <<<
 		# triple carrot syntax is required for this command section
 		set -eux -o pipefail
-		echo "Searching for VCF"
+		echo "Searching for VCF and generating config file"
 		# doing this in python is probably not ideal
 		# in fact, this whole block is pretty cursed
 		python << CODE
@@ -139,7 +145,7 @@ task runCheckGds {
 		CODE
 
 		echo "Calling check_gds.R"
-		Rscript /usr/local/analysis_pipeline/R/check_gds.R checkgds.config
+		Rscript /usr/local/analysis_pipeline/R/check_gds.R checkgds.config --chromosome 1
 	>>>
 
 	runtime {
@@ -171,25 +177,25 @@ workflow a_vcftogds {
 
 	# fails on provided test data, something about sampleID
 	# but works on... not test data???
-	#scatter(vcf_file in bogus_vcf_inputs) {
-		#call runGds {
-			#input:
-				#vcf = vcf_file,
-				#disk = vcfgds_disk,
-				#memory = vcfgds_memory
-		#}
-	#}
+	scatter(vcf_file in vcf_files) {
+		call runGds {
+			input:
+				vcf = vcf_file,
+				disk = vcfgds_disk,
+				memory = vcfgds_memory
+		}
+	}
 	
 	call runUniqueVars {
 		input:
-			gdss = bogus_gds_inputs,
-			#gdss = runGds.out,
+			#gdss = bogus_gds_inputs,
+			gdss = runGds.out,
 			disk = uniquevars_disk,
 			memory = uniquevars_memory
 	}
 	
-	scatter(gds in bogus_gds_inputs) {
-	#scatter(gds in runUniqueVars.out) {
+	#scatter(gds in bogus_gds_inputs) {
+	scatter(gds in runUniqueVars.out) {
 		call runCheckGds {
 			input:
 				gds = gds,
