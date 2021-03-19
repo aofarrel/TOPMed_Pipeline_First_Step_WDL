@@ -18,6 +18,22 @@ task runGds {
 		echo "Generating config file"
 		python << CODE
 		import os
+		def find_chromsome(somefile):
+			chr_array = []
+			chrom_num = somefile.split("chr")[1]
+
+			if isNumeric(chrom_num.charAt(1)):
+				chr_array.push(chrom_num.substr(0,2))
+			else:
+				chr_array.push(chrom_num.substr(0,1))
+			return "".join(chr_array)
+
+
+		config = ""
+		config += "vcf_file \"" + ~{vcf} + "\"\n"
+
+
+
 		f = open("megastep_A.config", "a")
 		f.write("outprefix test\nvcf_file ")
 		f.write("~{vcf}")
@@ -56,7 +72,6 @@ task runUniqueVars {
 		set -eux -o pipefail
 
 		echo "Copying inputs into the workdir"
-		#cp ~{gdss sep=","} .
 
 		# generate config used by the R script
 		# must be done in this task or else this task will fail to find the inputs
@@ -182,7 +197,7 @@ task runCheckGds {
 workflow a_vcftogds {
 	input {
 		Array[File] vcf_files
-		Boolean check_gds = False
+		Boolean check_gds = false
 
 		# debug
 		Array[File] bogus_gds_inputs
