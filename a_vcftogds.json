@@ -5,6 +5,7 @@
   "a_vcftogds.bogus_gds_inputs": ["notbogus/1KG_phase3_subset_chr1.gds", "notbogus/1KG_phase3_subset_chr2.gds", "notbogus/1KG_phase3_subset_chr3.gds", "notbogus/1KG_phase3_subset_chr4.gds", "notbogus/1KG_phase3_subset_chr5.gds", "notbogus/1KG_phase3_subset_chr6.gds", "notbogus/1KG_phase3_subset_chr7.gds", "notbogus/1KG_phase3_subset_chr8.gds", "notbogus/1KG_phase3_subset_chr9.gds"],
   "a_vcftogds.uniquevars_disk": 50,
   "a_vcftogds.uniquevars_memory": 10,
+  "a_vcftogds.check_gds": true,
   "a_vcftogds.checkgds_disk": 50,
   "a_vcftogds.checkgds_memory": 10
 }

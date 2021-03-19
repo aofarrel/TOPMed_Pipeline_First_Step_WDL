@@ -16,7 +16,7 @@ task runGds {
 		# regardless of whether we save full path or use os.path.basename
 
 		echo "Generating config file"
-		python << CODE
+		node << CODE
 		import os
 		f = open("megastep_A.config", "a")
 		f.write("outprefix test\nvcf_file ")
@@ -33,7 +33,7 @@ task runGds {
 		Rscript /usr/local/analysis_pipeline/R/vcf2gds.R "megastep_A.config"
 	}
 	runtime {
-		docker: "uwgac/topmed-master:latest"
+		docker: "uwgac/topmed-master:2.8.1"
 		disks: "local-disk ${disk} SSD"
 		bootDiskSizeGb: 6
 		memory: "${memory} GB"
@@ -56,6 +56,7 @@ task runUniqueVars {
 		set -eux -o pipefail
 
 		echo "Copying inputs into the workdir"
+		#cp ~{gdss sep=","} .
 
 		# generate config used by the R script
 		# must be done in this task or else this task will fail to find the inputs
@@ -114,7 +115,7 @@ task runUniqueVars {
 		Rscript /usr/local/analysis_pipeline/R/unique_variant_ids.R unique_variant_ids.config
 	}
 	runtime {
-		docker: "uwgac/topmed-master:latest"
+		docker: "uwgac/topmed-master:2.8.1"
 		disks: "local-disk ${disk} SSD"
 		bootDiskSizeGb: 6
 		memory: "${memory} GB"
@@ -171,7 +172,7 @@ task runCheckGds {
 	>>>
 
 	runtime {
-		docker: "uwgac/topmed-master:latest"
+		docker: "uwgac/topmed-master:2.8.1"
 		disks: "local-disk ${disk} SSD"
 		bootDiskSizeGb: 6
 		memory: "${memory} GB"
@@ -181,6 +182,7 @@ task runCheckGds {
 workflow a_vcftogds {
 	input {
 		Array[File] vcf_files
+		Boolean check_gds = False
 
 		# debug
 		Array[File] bogus_gds_inputs
@@ -214,6 +216,7 @@ workflow a_vcftogds {
 			#memory = uniquevars_memory
 	#}
 	
+	#if runCheckGds
 	#scatter(gds in bogus_gds_inputs) {
 	#scatter(gds in runUniqueVars.out) {
 		#call runCheckGds {
