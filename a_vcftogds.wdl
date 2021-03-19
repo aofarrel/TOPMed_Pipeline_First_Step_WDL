@@ -10,7 +10,7 @@ task runGds {
 		Int memory
 	}
 	command {
-		set -eux -o pipefail
+		#set -eux -o pipefail
 		# Generate config used by the R script
 		# Must be done in this task or else this task will fail to find the inputs
 		# regardless of whether we save full path or use os.path.basename
@@ -55,6 +55,8 @@ task runUniqueVars {
 	command {
 		set -eux -o pipefail
 
+		echo "Copying inputs into the workdir"
+
 		# generate config used by the R script
 		# must be done in this task or else this task will fail to find the inputs
 		# regardless of whether we save full path or use os.path.basename
@@ -70,15 +72,34 @@ task runUniqueVars {
 		f.write("outprefix test")
 		f.write("\nvcf_file this_is_a_bogus_name.vcf")
 		f.write("\ngds_file ")
+		f.close
 		py_listicle = []
 
-		# because we sorted the array, indexes 0 and 11 should be chr1 and chr2 respectively
-		for charA, charB in zip(py_gdsarray[0], py_gdsarray[11]):
-			if charA == charB:
-				py_listicle.append(charA)
-			else:
-				py_listicle.append(" ")
+		# this approach only works if everything is coming in from one input folder
+		# which is not the case if inputs come in from a scattered task
+		if (len(py_gdsarray)) == 23:
+			# because we sorted the array, indexes 0 and 11 should be chr1 and chr2 respectively
+			# this will hopefully prevent heckery involving 1 and 10
+			for charA, charB in zip(py_gdsarray[0], py_gdsarray[11]):
+				if charA == charB:
+					py_listicle.append(charA)
+				else:
+					py_listicle.append(" ")
+		else:
+			# debug situations -- probably less than 10 chrs, but will have diff input folders
+			for charA, charB in zip(py_gdsarray[0], py_gdsarray[1]):
+				if charA == charB:
+					print(charA) # debug
+					py_listicle.append(charA)
+				elif charA == "/": # first slash after mismatch folder names
+					if py_listicle
+					py_listicle.append(os.path.basename)
+					break
+				else:
+					print("Mismatch: %s %s " % (charA, charB))
+					py_listicle.append(" ")
 		py_name = "".join(py_listicle)
+		f = open("unique_variant_ids.config", "a")
 		f.write("'")
 		f.write(py_name)
 		f.write("'")
@@ -86,6 +107,7 @@ task runUniqueVars {
 		f.close()
 		exit()
 		CODE
+
 
 		echo "Calling uniqueVariantIDs.R"
 		
@@ -175,8 +197,6 @@ workflow a_vcftogds {
 		Int checkgds_memory
 	}
 
-	# fails on provided test data, something about sampleID
-	# but works on... not test data???
 	scatter(vcf_file in vcf_files) {
 		call runGds {
 			input:
@@ -186,24 +206,24 @@ workflow a_vcftogds {
 		}
 	}
 	
-	call runUniqueVars {
-		input:
-			#gdss = bogus_gds_inputs,
-			gdss = runGds.out,
-			disk = uniquevars_disk,
-			memory = uniquevars_memory
-	}
+	#call runUniqueVars {
+		#input:
+			##gdss = bogus_gds_inputs,
+			#gdss = runGds.out,
+			#disk = uniquevars_disk,
+			#memory = uniquevars_memory
+	#}
 	
 	#scatter(gds in bogus_gds_inputs) {
-	scatter(gds in runUniqueVars.out) {
-		call runCheckGds {
-			input:
-				gds = gds,
-				vcfs = vcf_files,
-				disk = checkgds_disk,
-				memory = checkgds_memory
-		}
-	}
+	#scatter(gds in runUniqueVars.out) {
+		#call runCheckGds {
+			#input:
+				#gds = gds,
+				#vcfs = vcf_files,
+				#disk = checkgds_disk,
+				#memory = checkgds_memory
+		#}
+	#}
 
 	meta {
 		author: "Ash O'Farrell"
