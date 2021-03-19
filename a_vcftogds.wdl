@@ -16,7 +16,7 @@ task runGds {
 		# regardless of whether we save full path or use os.path.basename
 
 		echo "Generating config file"
-		node << CODE
+		python << CODE
 		import os
 		f = open("megastep_A.config", "a")
 		f.write("outprefix test\nvcf_file ")
