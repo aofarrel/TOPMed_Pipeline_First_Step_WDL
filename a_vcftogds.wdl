@@ -48,21 +48,20 @@ task vcf2gds {
 task unique_variant_id {
 	input {
 		Array[File] gdss
-		Int chr_kind = 0
+		Array[String] chrs = [1, 2, 3]
 		# runtime attr
 		Int disk
 		Int memory
 	}
 	command <<<
 		set -eux -o pipefail
+
 		echo "Copying inputs into the workdir"
-		# cannot for the life of me figure out how to do this in bash
-		# without cromwell throwing a syntax error
-		BASH_INPUT1="{"
-		BASH_INPUT2="~{sep="," gdss}"
-		BASH_INPUT3=$(printf "\x$(printf %x 125)")
-		BASH_INPUT="$BASH_INPUT1$BASH_INPUT2$BASH_INPUT3"
-		cp "${BASH_INPUT}" .
+		BASH_FILES=(~{sep=" " gdss})
+		for BASH_FILE in ${BASH_FILES[@]};
+		do
+			cp ${BASH_FILE} .
+		done
 
 		# generate config used by the R script
 		# must be done in this task or else this task will fail to find the inputs
@@ -71,42 +70,40 @@ task unique_variant_id {
 		python << CODE
 		import os
 		py_gdsarray = ['~{sep="','" gdss}']
+		py_chrarray = ['~{sep="','" chrs}']
 
 		# diff backends feed in files differently so we need to sort due to later assumption
 		py_gdsarray.sort()
 
 		f = open("unique_variant_ids.config", "a") # yeah yeah yeah this should be with open() I know
 		f.write("outprefix test")
+		f.write("\nchromosomes ")
+		f.write("'")
+		for py_chr in py_chrarray:
+			f.write(py_chr)
+			f.write(" ")
+		f.write("'")
 		f.write("\nvcf_file this_is_a_bogus_name.vcf")
 		f.write("\ngds_file ")
-		f.close
 		py_listicle = []
 
-		# this approach only works if everything is coming in from one input folder
-		# which is not the case if inputs come in from a scattered task
 		if (len(py_gdsarray)) == 23:
 			# because we sorted the array, indexes 0 and 11 should be chr1 and chr2 respectively
 			# this will hopefully prevent heckery involving 1 and 10
-			for charA, charB in zip(py_gdsarray[0], py_gdsarray[11]):
+			for charA, charB in zip(os.path.basename(py_gdsarray[0]), os.path.basename(py_gdsarray[11])):
 				if charA == charB:
 					py_listicle.append(charA)
 				else:
 					py_listicle.append(" ")
 		else:
-			# debug situations -- probably less than 10 chrs, but will have diff input folders
-			for charA, charB in zip(py_gdsarray[0], py_gdsarray[1]):
+			# debug situations -- probably less than 10 chrs
+			for charA, charB in zip(os.path.basename(py_gdsarray[0]), os.path.basename(py_gdsarray[1])):
 				if charA == charB:
-					print(charA) # debug
 					py_listicle.append(charA)
-				elif charA == "/": # first slash after mismatch folder names
-					if py_listicle
-					py_listicle.append(os.path.basename)
-					break
 				else:
-					print("Mismatch: %s %s " % (charA, charB))
 					py_listicle.append(" ")
+		
 		py_name = "".join(py_listicle)
-		f = open("unique_variant_ids.config", "a")
 		f.write("'")
 		f.write(py_name)
 		f.write("'")
