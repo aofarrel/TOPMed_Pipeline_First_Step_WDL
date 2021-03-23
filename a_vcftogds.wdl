@@ -130,8 +130,6 @@ task check_gds {
 	input {
 		File gds
 		Array[File] vcfs
-		# there is a small chance that the vcf2gds sub made more than
-		# one replacement but we're gonna hope that's not the case
 		String gzvcf = basename(sub(gds, "\\.gds$", ".vcf.gz"))
 		# runtime attr
 		Int disk
@@ -141,34 +139,64 @@ task check_gds {
 	command <<<
 		# triple carrot syntax is required for this command section
 		set -eux -o pipefail
+
 		echo "Searching for VCF and generating config file"
-		# doing this in python is probably not ideal
-		# in fact, this whole block is pretty cursed
+		# this whole block is hella cursed as config needs spaces in filenames
 		python << CODE
 		import os
 		py_vcfarray = ['~{sep="','" vcfs}']
 		for py_file in py_vcfarray:
 			py_base = os.path.basename(py_file)
-			print("--")
-			print(py_base)
-			print("~{gzvcf}")
-			print("--")
 			if(py_base == "~{gzvcf}"):
 				f = open("checkgds.config", "a")
 				f.write("outprefix test")
 				f.write("\nvcf_file ")
-				f.write(py_file)
+				# the path SHOULDN'T include 'chr' except in filename
+				# but can we rely on that? I hope so!
+				py_thisVcfSplitOnChr = py_file.split("chr")
+				if(unicode(str(py_thisVcfSplitOnChr[1][1])).isnumeric()):
+					# chr10 and above
+					print(py_thisVcfSplitOnChr)
+					py_thisVcfWithSpace = "".join([
+						py_thisVcfSplitOnChr[0],
+						"chr ",
+						py_thisVcfSplitOnChr[1][2:]])
+					print(py_thisVcfWithSpace)
+					py_thisChr = int(py_thisVcfSplitOnChr[1][0:2])
+				else:
+					# chr9 and below + chrX
+					py_thisVcfWithSpace = "".join([
+						py_thisVcfSplitOnChr[0],
+						"chr ",
+						py_thisVcfSplitOnChr[1][1:]])
+					py_thisChr = int(py_thisVcfSplitOnChr[1][0:1])
+				f.write("'")
+				f.write(py_thisVcfWithSpace)
+				f.write("'")
 				f.write("\ngds_file ")
-				f.write("'~{gds}'")
+				py_thisGdsSplitOnChr = "~{gds}".split("chr")
+				py_thisGdsWithSpace = "".join([
+					py_thisGdsSplitOnChr[0],
+					"chr ",
+					py_thisGdsSplitOnChr[1][1:]])
+				f.write("'")
+				f.write(py_thisGdsWithSpace)
+				f.write("'")
 				f.write("\nmerged_gds_file 'merged.gds'\n")
 				f.close()
+				g = open("chr_number", "a")
+				g.write(str(py_thisChr))
 				exit()
-		print("Failed to find a matching VCF")
-		exit(1)  # if we don't find a VCF, fail
+		print("Failed to find a matching VCF for GDS file: ~{gds}")
+		exit(1)  # if we don't find a matching VCF, fail
 		CODE
 
+		echo "Setting chromosome number"
+		BASH_CHR=$(<chr_number)
+		echo "${BASH_CHR}"
+
 		echo "Calling check_gds.R"
-		Rscript /usr/local/analysis_pipeline/R/check_gds.R checkgds.config --chromosome 1
+		Rscript /usr/local/analysis_pipeline/R/check_gds.R checkgds.config --chromosome ${BASH_CHR}
 	>>>
 
 	runtime {
@@ -183,9 +211,6 @@ workflow a_vcftogds {
 	input {
 		Array[File] vcf_files
 		Boolean check_gds = false
-
-		# debug
-		Array[File] bogus_gds_inputs
 
 		# runtime attributes
 		# [1] vcf2gds
@@ -215,16 +240,17 @@ workflow a_vcftogds {
 			memory = uniquevars_memory
 	}
 	
-	#if check_gds
-	#scatter(gds in unique_variant_id.out) {
-		#call check_gds {
-			#input:
-				#gds = gds,
-				#vcfs = vcf_files,
-				#disk = checkgds_disk,
-				#memory = checkgds_memory
-		#}
-	#}
+	if(check_gds) {
+		scatter(gds in unique_variant_id.out) {
+			call check_gds {
+				input:
+					gds = gds,
+					vcfs = vcf_files,
+					disk = checkgds_disk,
+					memory = checkgds_memory
+			}
+		}
+	}
 
 	meta {
 		author: "Ash O'Farrell"

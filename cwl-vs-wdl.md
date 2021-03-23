@@ -21,9 +21,12 @@ The CWL calls other CWLs. The WDL does not call other WDLs.
 The original CWL allocates memory and CPUs on an overall level, while the WDL does it on a task level. In other words, the WDL is more granular.  
 * Reasoning: GCS has stricter requirements than AWS regarding storage. Doing it this way also allows the check GDS step, which takes a lot more resources, to call more than the rest of the the WDL, saving money.
 
+The WDL checks to ensure every gds file has a matching VCF during the creation of a configuration file. The CWL checks during runtime of the R script.
+* Reasoning: The R script correctly prints file not found errors, but they are printed before a false error about files have mismatching lines. This method of erroring might be slightly clearer.
+
 
 ## Miscellaneous
-The WDL currently lacks the format argument. It's in progress.
+The WDL currently lacks the format argument and support for sample files. It's in progress.
 
 ----
 Both the CWL and the WDL generate config files on a per-task basis. That is to say, a given task generates a brand new config file, then runs a single R script with that new config file. However, the CWL generates config files using an InlineJavascriptRequirement, which is run before the CWL equivivalent of a task's command section begins. The WDL generates them using an inline Python script during the beginning of a task's command section.  
