@@ -1,8 +1,8 @@
 {
-  "a_vcftogds.vcf_files": ["notbogus/1KG_phase3_subset_chr1.vcf.gz", "notbogus/1KG_phase3_subset_chr2.vcf.gz", "notbogus/1KG_phase3_subset_chr3.vcf.gz", "notbogus/1KG_phase3_subset_chr20.vcf.gz"],
+  "a_vcftogds.vcf_files": ["notbogus/1KG_phase3_subset_chr1.vcf.gz", "notbogus/1KG_phase3_subset_chr2.vcf.gz", "notbogus/1KG_phase3_subset_chr3.vcf.gz", "notbogus/1KG_phase3_subset_chr20.vcf.gz", "notbogus/1KG_phase3_subset_chrX.vcf.gz"],
+  "a_vcftogds.chrs": ["1","2","3"],
   "a_vcftogds.vcfgds_disk": 50,
   "a_vcftogds.vcfgds_memory": 10,
-  "a_vcftogds.bogus_gds_inputs": ["notbogus/1KG_phase3_subset_chr1.gds", "notbogus/1KG_phase3_subset_chr2.gds", "notbogus/1KG_phase3_subset_chr3.gds", "notbogus/1KG_phase3_subset_chr20.gds"],
   "a_vcftogds.uniquevars_disk": 50,
   "a_vcftogds.uniquevars_memory": 10,
   "a_vcftogds.check_gds": true,

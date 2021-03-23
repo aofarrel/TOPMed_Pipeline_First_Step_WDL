@@ -48,7 +48,7 @@ task vcf2gds {
 task unique_variant_id {
 	input {
 		Array[File] gdss
-		Array[String] chrs = [1, 2, 3]
+		Array[String] chrs
 		# runtime attr
 		Int disk
 		Int memory
@@ -69,15 +69,17 @@ task unique_variant_id {
 		echo "Generating config file"
 		python << CODE
 		import os
-		py_gdsarray = ['~{sep="','" gdss}']
+		py_gdsarrayfull = ['~{sep="','" gdss}']
 		py_chrarray = ['~{sep="','" chrs}']
 
 		# diff backends feed in files differently so we need to sort due to later assumption
+		py_gdsarray = []
+		for fullpath in py_gdsarrayfull:
+			py_gdsarray.append(os.path.basename(fullpath))
 		py_gdsarray.sort()
 
 		f = open("unique_variant_ids.config", "a") # yeah yeah yeah this should be with open() I know
-		f.write("outprefix test")
-		f.write("\nchromosomes ")
+		f.write("chromosomes ")
 		f.write("'")
 		for py_chr in py_chrarray:
 			f.write(py_chr)
@@ -87,17 +89,33 @@ task unique_variant_id {
 		f.write("\ngds_file ")
 		py_listicle = []
 
-		if (len(py_gdsarray)) == 23:
-			# because we sorted the array, indexes 0 and 11 should be chr1 and chr2 respectively
-			# this will hopefully prevent heckery involving 1 and 10
-			for charA, charB in zip(os.path.basename(py_gdsarray[0]), os.path.basename(py_gdsarray[11])):
-				if charA == charB:
-					py_listicle.append(charA)
-				else:
-					py_listicle.append(" ")
+		print(py_gdsarray)
+
+		if ( 22 <= len(py_gdsarray) <= 25):
+
+			if(len(os.path.basename(py_gdsarray[0])) == len(os.path.basename(py_gdsarray[11]))):
+				for charA, charB in zip(os.path.basename(py_gdsarray[0]), os.path.basename(py_gdsarray[11])):
+					if charA == charB:
+						py_listicle.append(charA)
+					else:
+						py_listicle.append(" ")
+
+			else:
+				# this shouldn't happen and is kind of a crapshoot
+				for charA, charB in zip(os.path.basename(py_gdsarray[0]), os.path.basename(py_gdsarray[1])):
+					if charA == charB:
+						py_listicle.append(charA)
+					else:
+						py_listicle.append(" ")
+
 		else:
-			# debug situations -- probably less than 10 chrs
+			# cross-our-fingers-situation - do not error as this may be a test run on <22 chrs
+			print("WARNING: Very weird number of chromosomes detected. This pipeline is only designed for human chr1-22+X.")
+			print("Attempting %s and %s" % (os.path.basename(py_gdsarray[0]), os.path.basename(py_gdsarray[1])))
 			for charA, charB in zip(os.path.basename(py_gdsarray[0]), os.path.basename(py_gdsarray[1])):
+				print(charA)
+				print(charB)
+				print("--")
 				if charA == charB:
 					py_listicle.append(charA)
 				else:
@@ -149,44 +167,59 @@ task check_gds {
 			py_base = os.path.basename(py_file)
 			if(py_base == "~{gzvcf}"):
 				f = open("checkgds.config", "a")
-				f.write("outprefix test")
-				f.write("\nvcf_file ")
-				# the path SHOULDN'T include 'chr' except in filename
-				# but can we rely on that? I hope so!
+				f.write("vcf_file ")
+
+				# write VCF file
 				py_thisVcfSplitOnChr = py_file.split("chr")
 				if(unicode(str(py_thisVcfSplitOnChr[1][1])).isnumeric()):
 					# chr10 and above
-					print(py_thisVcfSplitOnChr)
 					py_thisVcfWithSpace = "".join([
 						py_thisVcfSplitOnChr[0],
 						"chr ",
 						py_thisVcfSplitOnChr[1][2:]])
-					print(py_thisVcfWithSpace)
-					py_thisChr = int(py_thisVcfSplitOnChr[1][0:2])
+					py_thisChr = py_thisVcfSplitOnChr[1][0:2]
 				else:
 					# chr9 and below + chrX
 					py_thisVcfWithSpace = "".join([
 						py_thisVcfSplitOnChr[0],
 						"chr ",
 						py_thisVcfSplitOnChr[1][1:]])
-					py_thisChr = int(py_thisVcfSplitOnChr[1][0:1])
+					py_thisChr = py_thisVcfSplitOnChr[1][0:1]
 				f.write("'")
 				f.write(py_thisVcfWithSpace)
 				f.write("'")
+				
+				# write GDS file
 				f.write("\ngds_file ")
 				py_thisGdsSplitOnChr = "~{gds}".split("chr")
-				py_thisGdsWithSpace = "".join([
-					py_thisGdsSplitOnChr[0],
-					"chr ",
-					py_thisGdsSplitOnChr[1][1:]])
+				if(unicode(str(py_thisGdsSplitOnChr[1][1])).isnumeric()):
+					# chr10 and above
+					print("10 and above")
+					print(py_thisGdsSplitOnChr)
+					py_thisGdsWithSpace = "".join([
+						py_thisGdsSplitOnChr[0],
+						"chr ",
+						py_thisGdsSplitOnChr[1][2:]])
+					py_thisChr = py_thisGdsSplitOnChr[1][0:2]
+				else:
+					# chr9 and below + chrX
+					print("9 and below + x")
+					py_thisGdsWithSpace = "".join([
+						py_thisGdsSplitOnChr[0],
+						"chr ",
+						py_thisGdsSplitOnChr[1][1:]])
+					py_thisChr = py_thisGdsSplitOnChr[1][0:1]
 				f.write("'")
 				f.write(py_thisGdsWithSpace)
 				f.write("'")
-				f.write("\nmerged_gds_file 'merged.gds'\n")
+
 				f.close()
+
+				# write chromosome number, to be read in bash
 				g = open("chr_number", "a")
-				g.write(str(py_thisChr))
+				g.write(str(py_thisChr)) # may already be str if chrX
 				exit()
+
 		print("Failed to find a matching VCF for GDS file: ~{gds}")
 		exit(1)  # if we don't find a matching VCF, fail
 		CODE
@@ -210,6 +243,7 @@ task check_gds {
 workflow a_vcftogds {
 	input {
 		Array[File] vcf_files
+		Array[String] chrs = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,"X"]
 		Boolean check_gds = false
 
 		# runtime attributes
@@ -236,6 +270,7 @@ workflow a_vcftogds {
 	call unique_variant_id {
 		input:
 			gdss = vcf2gds.out,
+			chrs = chrs,
 			disk = uniquevars_disk,
 			memory = uniquevars_memory
 	}
