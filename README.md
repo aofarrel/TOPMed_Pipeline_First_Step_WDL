@@ -37,7 +37,8 @@ This script converts VCF (one per chromosome) to GDS files, discarding non-genot
 * checkgds_memory
 
 ### Optional Inputs
-* check_gds : *boolean* -- Run the checkGDS step. Defaults to false, because this step is computationally intense and requires your VCF inputs to have "chr" appear in their name.
+* check_gds : *boolean* -- Run the checkGDS step. Defaults to false, because this step is computationally intense and requires your VCF inputs to have "chr" appear in their name. It is highly recommended to skip this step on modern topmed data, as it could take literal days.
+* format : *array of strings* of VCF format fields to carry over into the GDS. Default is GT.
 
 ### Outputs
 GDS file matching the name of the input vds with ".gds" appeneded to the end.
