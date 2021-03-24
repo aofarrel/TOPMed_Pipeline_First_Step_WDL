@@ -5,6 +5,7 @@ task vcf2gds {
 	input {
 		File vcf
 		String output_file_name = basename(sub(vcf, "\\.vcf.gz$", ".gds"))
+		Array[String] format # vcf formats to keep
 		# runtime attributes
 		Int disk
 		Int memory
@@ -22,6 +23,9 @@ task vcf2gds {
 		f = open("megastep_A.config", "a")
 		f.write("outprefix test\nvcf_file ")
 		f.write("~{vcf}")
+		f.write("\nformat ")
+		for py_formattokeep in ['~{sep="','" format}']:
+			f.write(py_formattokeep)
 		f.write("\ngds_file '~{output_file_name}'\n")
 		f.write("merged_gds_file 'merged.gds'")
 		f.close()
@@ -244,6 +248,7 @@ workflow a_vcftogds {
 	input {
 		Array[File] vcf_files
 		Array[String] chrs = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,"X"]
+		Array[String] format = ["GT"]
 		Boolean check_gds = false
 
 		# runtime attributes
@@ -262,6 +267,7 @@ workflow a_vcftogds {
 		call vcf2gds {
 			input:
 				vcf = vcf_file,
+				format = format,
 				disk = vcfgds_disk,
 				memory = vcfgds_memory
 		}
