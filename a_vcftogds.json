@@ -1,11 +1,11 @@
 {
-  "a_vcftogds.vcf_files": ["testdata/ALL.chr22.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.MAC10.01p.vcf.gz", "testdata/1KG_phase3_subset_chr21.vcf.gz"],
+  "a_vcftogds.vcf_files": ["notbogus/1KG_phase3_subset_chr1.vcf.gz", "notbogus/1KG_phase3_subset_chr2.vcf.gz", "notbogus/1KG_phase3_subset_chr3.vcf.gz", "notbogus/1KG_phase3_subset_chr20.vcf.gz", "notbogus/1KG_phase3_subset_chrX.vcf.gz"],
+  "a_vcftogds.chrs": ["1","2","3"],
   "a_vcftogds.vcfgds_disk": 50,
   "a_vcftogds.vcfgds_memory": 10,
   "a_vcftogds.uniquevars_disk": 50,
   "a_vcftogds.uniquevars_memory": 10,
-  "a_vcftogds.uniquevars_debug": "develop_unique_variant_ids.R",
+  "a_vcftogds.check_gds": true,
   "a_vcftogds.checkgds_disk": 50,
-  "a_vcftogds.checkgds_memory": 10,
-  "a_vcftogds.checkgds_debug": "develop_check_gds.R"
+  "a_vcftogds.checkgds_memory": 10
 }

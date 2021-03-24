@@ -22,3 +22,5 @@ renv.lock
 Cromwell.stderr.txt
 Cromwell.stdout.txt
 cromwell-input/*
+docker/*
+notbogus/*
