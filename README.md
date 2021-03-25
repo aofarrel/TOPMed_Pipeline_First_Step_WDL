@@ -26,7 +26,7 @@ If you are running on a local machine, we do not recommend running this on all 2
 This script converts VCF, one per chromosome, to GDS files, discarding non-genotype FORMAT fields by default (but this can be changed, see optional inputs).  
 
 ### Required Inputs
-* vcf : an *array of vcf files* in vcf, .vcf.bgz, .vcf.gz, or .bcf format
+* vcf : an *array of vcf files* in vcf, .vcf.bgz, .vcf.gz, .bcf, or any combination thereof format
 * vcfgds_disk : *int* of disk space to allot for vcfToGds.R
 * vcfgds_memory : *int* of memory to allot for vcfToGds.R
 * uniquevars_disk
