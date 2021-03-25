@@ -4,7 +4,7 @@ version 1.0
 task vcf2gds {
 	input {
 		File vcf
-		String output_file_name = basename(sub(vcf, "\\.vcf.gz$", ".gds"))
+		String output_file_name = basename(sub(vcf, "\.vcf\.gz(?!.{1,})|\.vcf\.bgz(?!.{5,})|\.vcf(?!.{5,})|\.bcf(?!.{1,})", ".gds"))
 		Array[String] format # vcf formats to keep
 		# runtime attributes
 		Int disk
@@ -153,6 +153,9 @@ task check_gds {
 		File gds
 		Array[File] vcfs
 		String gzvcf = basename(sub(gds, "\\.gds$", ".vcf.gz"))
+		String bgzvcf =  basename(sub(gds, "\\.gds$", ".vcf.bgz"))
+		String uncompressed = basename(sub(gds, "\\.gds$", ".vcf"))
+		String bcf = basename(sub(gds, "\\.gds$", ".bcf"))
 		# runtime attr
 		Int disk
 		Int memory
@@ -166,64 +169,59 @@ task check_gds {
 		# this whole block is hella cursed as config needs spaces in filenames
 		python << CODE
 		import os
+
+		def vcf_or_gds_with_space(py_splitstring):
+			if(unicode(str(py_splitstring[1][1])).isnumeric()):
+				# chr10 and above
+				py_thisVcfWithSpace = "".join([
+					py_splitstring[0],
+					"chr ",
+					py_splitstring[1][2:]])
+				py_thisChr = py_splitstring[1][0:2]
+			else:
+				# chr9 and below + chrX
+				py_thisVcfWithSpace = "".join([
+					py_splitstring[0],
+					"chr ",
+					py_splitstring[1][1:]])
+				py_thisChr = py_splitstring[1][0:1]
+			return [py_thisVcfWithSpace, py_thisChr]
+
+		def write_config(py_file):
+			f = open("checkgds.config", "a")
+			# write VCF file
+			f.write("vcf_file ")
+			py_thisVcfSplitOnChr = py_file.split("chr")
+			f.write("'")
+			f.write(vcf_or_gds_with_space(py_thisVcfSplitOnChr)[0])
+			f.write("'")
+			# write GDS file
+			f.write("\ngds_file ")
+			py_thisGdsSplitOnChr = "~{gds}".split("chr")
+			f.write("'")
+			f.write(vcf_or_gds_with_space(py_thisGdsSplitOnChr)[0])
+			f.write("'")
+			# grab chr number and close file
+			py_thisChr = vcf_or_gds_with_space(py_thisGdsSplitOnChr)[1]
+			f.close()
+			# write chromosome number, to be read in bash
+			g = open("chr_number", "a")
+			g.write(str(py_thisChr)) # may already be str if chrX
+			exit()
+
 		py_vcfarray = ['~{sep="','" vcfs}']
 		for py_file in py_vcfarray:
 			py_base = os.path.basename(py_file)
 			if(py_base == "~{gzvcf}"):
-				f = open("checkgds.config", "a")
-				f.write("vcf_file ")
-
-				# write VCF file
-				py_thisVcfSplitOnChr = py_file.split("chr")
-				if(unicode(str(py_thisVcfSplitOnChr[1][1])).isnumeric()):
-					# chr10 and above
-					py_thisVcfWithSpace = "".join([
-						py_thisVcfSplitOnChr[0],
-						"chr ",
-						py_thisVcfSplitOnChr[1][2:]])
-					py_thisChr = py_thisVcfSplitOnChr[1][0:2]
-				else:
-					# chr9 and below + chrX
-					py_thisVcfWithSpace = "".join([
-						py_thisVcfSplitOnChr[0],
-						"chr ",
-						py_thisVcfSplitOnChr[1][1:]])
-					py_thisChr = py_thisVcfSplitOnChr[1][0:1]
-				f.write("'")
-				f.write(py_thisVcfWithSpace)
-				f.write("'")
-				
-				# write GDS file
-				f.write("\ngds_file ")
-				py_thisGdsSplitOnChr = "~{gds}".split("chr")
-				if(unicode(str(py_thisGdsSplitOnChr[1][1])).isnumeric()):
-					# chr10 and above
-					print("10 and above")
-					print(py_thisGdsSplitOnChr)
-					py_thisGdsWithSpace = "".join([
-						py_thisGdsSplitOnChr[0],
-						"chr ",
-						py_thisGdsSplitOnChr[1][2:]])
-					py_thisChr = py_thisGdsSplitOnChr[1][0:2]
-				else:
-					# chr9 and below + chrX
-					print("9 and below + x")
-					py_thisGdsWithSpace = "".join([
-						py_thisGdsSplitOnChr[0],
-						"chr ",
-						py_thisGdsSplitOnChr[1][1:]])
-					py_thisChr = py_thisGdsSplitOnChr[1][0:1]
-				f.write("'")
-				f.write(py_thisGdsWithSpace)
-				f.write("'")
-
-				f.close()
-
-				# write chromosome number, to be read in bash
-				g = open("chr_number", "a")
-				g.write(str(py_thisChr)) # may already be str if chrX
-				exit()
-
+				write_config(py_file)
+			elif(py_base == "~{bgzvcf}"):
+				write_config(py_file)
+			elif(py_base == "~{uncompressed}"):
+				write_config(py_file)
+			elif(py_base == "~{bcf}"):
+				write_config(py_file)
+			else:
+				pass
 		print("Failed to find a matching VCF for GDS file: ~{gds}")
 		exit(1)  # if we don't find a matching VCF, fail
 		CODE
