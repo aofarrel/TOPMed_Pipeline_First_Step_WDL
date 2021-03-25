@@ -16,7 +16,6 @@ The current components are as follows:
 ## Limitations
 * Functionality is not one-to-one with the UW pipeline
 * Functionality is also not one-to-one with the CWL version of this pipeline
-* Currently this pipeline only accepts vcf.gz files
 * Due to how Cromwell works, local runs may draw too much memory (see below)
 
 ## Advice for running locally
@@ -33,7 +32,7 @@ The original script had arguments relating to runtime such as `ncores` and `clus
 This script converts VCF (one per chromosome) to GDS files, discarding non-genotype FORMAT fields.  
 
 ### Required Inputs
-* vcf : an *array of vcf files* in vcf, .vcf.bgz, or .vcf.gz format
+* vcf : an *array of vcf files* in vcf, .vcf.bgz, .vcf.gz, or .bcf format
 * vcfgds_disk : *int* of disk space to allot for vcfToGds.R
 * vcfgds_memory : *int* of memory to allot for vcfToGds.R
 * uniquevars_disk
