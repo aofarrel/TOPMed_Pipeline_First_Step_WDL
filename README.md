@@ -17,7 +17,12 @@ The current components are as follows:
 * Functionality is not one-to-one with the UW pipeline
 * Functionality is also not one-to-one with the CWL version of this pipeline
 * Currently this pipeline only accepts vcf.gz files
-* Due to how Cromwell works, local runs may draw too much memory and get sigkilled
+* Due to how Cromwell works, local runs may draw too much memory (see below)
+
+## Advice for running locally
+If you are running on a local machine, we do not recommend running this on all 23 chromosomes, even on the provided downsampled test data. Cromwell does not support local resource mangement in the same way it does on GCS and other platforms. This can result in a sigkill or locking up Docker, especially when dealing with scattered tasks.
+
+[There is a way to reduce the number of simultaneous tasks Cromwell will run](https://github.com/broadinstitute/cromwell/blob/develop/docs/cromwell_features/HogFactors.md), but this doesn't solve every issue. Even if only running on a small number of chromosomes, it is still possible for Cromwell to lock up Docker. Luckily this is usually easy to detect -- if a task's instance(s) transfer to WaitingForReturnCode but never seem to do anything else, control-C out it, restart Docker, and try again.
 
 ## General notes
 Nearly all scripts require a GDS file in SeqArray format. Phenotype files should be an AnnotatedDataFrame saved in an RData file. See `?AnnotatedDataFrame` or the SeqVarTools documentation for details. Example files are provided in `testdata`.

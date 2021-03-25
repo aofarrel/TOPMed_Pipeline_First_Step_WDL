@@ -1,0 +1,3 @@
+variant.id chr pop
+339 1 AFR
+831 1 topmed
