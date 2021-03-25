@@ -44,5 +44,5 @@ GDS file matching the name of the input vds with ".gds" appeneded to the end.
 ------
 
 #### Author
-Ash O'Farrell (aofarrel@ucsc.edu)
+Ash O'Farrell (aofarrel@ucsc.edu)  
 Please see the original TOPMed Pipeline for contributors to the overall structure and R scripts that this WDL relies upon.
