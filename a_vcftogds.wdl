@@ -1,4 +1,14 @@
 version 1.0
+# General notes on the "logic" behind this (not necessary reading for users)
+#
+# Configuration files must be created in the same WDL task they are used, or else
+# the task will fail to find the inputs. Locally, every WDL task creates a folder
+# with a random integer filename, so in order to find those inputs if full path
+# is used, the script creating the task must know what folder the inputs will be
+# located in, which it won't if the inputs are used in another task. It may be
+# possible to get around this using relative paths, but that approach appears to
+# be buggier. In any case, this "task creates the config then uses it" approach
+# mirrors what's in the CWL.
 
 # [1] vcf2gds -- converts a VCF file into a GDS file
 task vcf2gds {
@@ -12,10 +22,6 @@ task vcf2gds {
 	}
 	command {
 		set -eux -o pipefail
-
-		# Generate config used by the R script
-		# Must be done in this task or else this task will fail to find the inputs
-		# regardless of whether we save full path or use os.path.basename
 
 		echo "Generating config file"
 		python << CODE
@@ -32,8 +38,6 @@ task vcf2gds {
 		exit()
 		CODE
 
-		# Call R script to actually do the conversion
-		set -eux -o pipefail
 		echo "Calling R script vcfToGds.R"
 		Rscript /usr/local/analysis_pipeline/R/vcf2gds.R "megastep_A.config"
 	}
@@ -60,6 +64,8 @@ task unique_variant_id {
 	command <<<
 		set -eux -o pipefail
 
+		# This is a workaround for the Python code to work correctly
+		# Symlinks would be preferable, but they do not work on GCS
 		echo "Copying inputs into the workdir"
 		BASH_FILES=(~{sep=" " gdss})
 		for BASH_FILE in ${BASH_FILES[@]};
@@ -67,22 +73,17 @@ task unique_variant_id {
 			cp ${BASH_FILE} .
 		done
 
-		# generate config used by the R script
-		# must be done in this task or else this task will fail to find the inputs
-		# regardless of whether we save full path or use os.path.basename
 		echo "Generating config file"
 		python << CODE
 		import os
 		py_gdsarrayfull = ['~{sep="','" gdss}']
 		py_chrarray = ['~{sep="','" chrs}']
-
-		# diff backends feed in files differently so we need to sort due to later assumption
 		py_gdsarray = []
 		for fullpath in py_gdsarrayfull:
 			py_gdsarray.append(os.path.basename(fullpath))
-		py_gdsarray.sort()
-
-		f = open("unique_variant_ids.config", "a") # yeah yeah yeah this should be with open() I know
+		py_gdsarray.sort() # this is important!
+		
+		f = open("unique_variant_ids.config", "a")
 		f.write("chromosomes ")
 		f.write("'")
 		for py_chr in py_chrarray:
@@ -93,10 +94,17 @@ task unique_variant_id {
 		f.write("\ngds_file ")
 		py_listicle = []
 
-		print(py_gdsarray)
+		# The R script expects input filenames to have a space in them. What
+		# we're doing here is checking the filenames of chr1 and chr2, under
+		# the assumption the only difference between them is the numbers 1
+		# and 2 respectively. So, where they match, that forms our input
+		# filename for the config file, and where they differ (the number)
+		# is replaced with a space.
 
 		if ( 22 <= len(py_gdsarray) <= 25):
-
+			# 22 chrs assumes chr1-22, 23 assumes 1-22+X, 24 assumes 1-22+XY,
+			# and 25 assumes 1-22+XYM -- in all of these situations, the 0th
+			# element should be chr1 and the 11th element should be chr2
 			if(len(os.path.basename(py_gdsarray[0])) == len(os.path.basename(py_gdsarray[11]))):
 				for charA, charB in zip(os.path.basename(py_gdsarray[0]), os.path.basename(py_gdsarray[11])):
 					if charA == charB:
@@ -105,7 +113,7 @@ task unique_variant_id {
 						py_listicle.append(" ")
 
 			else:
-				# this shouldn't happen and is kind of a crapshoot
+				print("WARNING: Strange chromosome numbering detected. This pipeline is only designed for human chr1-22+X.")
 				for charA, charB in zip(os.path.basename(py_gdsarray[0]), os.path.basename(py_gdsarray[1])):
 					if charA == charB:
 						py_listicle.append(charA)
@@ -113,7 +121,9 @@ task unique_variant_id {
 						py_listicle.append(" ")
 
 		else:
-			# cross-our-fingers-situation - do not error as this may be a test run on <22 chrs
+			# The only reason we don't error out here is because the user may be
+			# running a test on under 22 chromosomes. That being said this isn't
+			# a robust way of handling this.
 			print("WARNING: Very weird number of chromosomes detected. This pipeline is only designed for human chr1-22+X.")
 			print("Attempting %s and %s" % (os.path.basename(py_gdsarray[0]), os.path.basename(py_gdsarray[1])))
 			for charA, charB in zip(os.path.basename(py_gdsarray[0]), os.path.basename(py_gdsarray[1])):
@@ -166,7 +176,6 @@ task check_gds {
 		set -eux -o pipefail
 
 		echo "Searching for VCF and generating config file"
-		# this whole block is hella cursed as config needs spaces in filenames
 		python << CODE
 		import os
 
@@ -189,24 +198,28 @@ task check_gds {
 
 		def write_config(py_file):
 			f = open("checkgds.config", "a")
+
 			# write VCF file
 			f.write("vcf_file ")
 			py_thisVcfSplitOnChr = py_file.split("chr")
 			f.write("'")
 			f.write(vcf_or_gds_with_space(py_thisVcfSplitOnChr)[0])
 			f.write("'")
+
 			# write GDS file
 			f.write("\ngds_file ")
 			py_thisGdsSplitOnChr = "~{gds}".split("chr")
 			f.write("'")
 			f.write(vcf_or_gds_with_space(py_thisGdsSplitOnChr)[0])
 			f.write("'")
+
 			# grab chr number and close file
 			py_thisChr = vcf_or_gds_with_space(py_thisGdsSplitOnChr)[1]
 			f.close()
-			# write chromosome number, to be read in bash
+
+			# write chromosome number to new file, to be read in bash
 			g = open("chr_number", "a")
-			g.write(str(py_thisChr)) # may already be str if chrX
+			g.write(str(py_thisChr)) # already str if chrX but python won't complain
 			exit()
 
 		py_vcfarray = ['~{sep="','" vcfs}']
@@ -221,14 +234,14 @@ task check_gds {
 			elif(py_base == "~{bcf}"):
 				write_config(py_file)
 			else:
-				pass
+				pass  # keep iterating
 		print("Failed to find a matching VCF for GDS file: ~{gds}")
 		exit(1)  # if we don't find a matching VCF, fail
 		CODE
 
 		echo "Setting chromosome number"
 		BASH_CHR=$(<chr_number)
-		echo "${BASH_CHR}"
+		echo "Chromosme number is ${BASH_CHR}"
 
 		echo "Calling check_gds.R"
 		Rscript /usr/local/analysis_pipeline/R/check_gds.R checkgds.config --chromosome ${BASH_CHR}

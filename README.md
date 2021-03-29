@@ -33,6 +33,7 @@ This script converts VCF, one per chromosome, to GDS files, discarding non-genot
 * uniquevars_memory
 * checkgds_disk
 * checkgds_memory
+Due to how this step localizes files, uniquevars_disk should be at least double the size of your input files.
 
 ### Optional Inputs
 * check_gds : *boolean* -- Run the checkGDS step. Defaults to false, because this step is computationally intense. It is **highly recommended** to skip this step on modern topmed data, as it could take literal days.
