@@ -225,16 +225,8 @@ task check_gds {
 		py_vcfarray = ['~{sep="','" vcfs}']
 		for py_file in py_vcfarray:
 			py_base = os.path.basename(py_file)
-			if(py_base == "~{gzvcf}"):
+			if(py_base == "~{gzvcf}" or py_base == "~{bgzvcf}" or py_base == "~{uncompressed}" or py_base == "~{bcf}"):
 				write_config(py_file)
-			elif(py_base == "~{bgzvcf}"):
-				write_config(py_file)
-			elif(py_base == "~{uncompressed}"):
-				write_config(py_file)
-			elif(py_base == "~{bcf}"):
-				write_config(py_file)
-			else:
-				pass  # keep iterating
 		print("Failed to find a matching VCF for GDS file: ~{gds}")
 		exit(1)  # if we don't find a matching VCF, fail
 		CODE
