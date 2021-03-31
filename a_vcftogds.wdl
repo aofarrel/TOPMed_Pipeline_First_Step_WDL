@@ -26,10 +26,9 @@ task vcf2gds {
 		echo "Generating config file"
 		python << CODE
 		import os
-		f = open("megastep_A.config", "a")
-		f.write("outprefix test\nvcf_file ")
-		f.write("~{vcf}")
-		f.write("\nformat ")
+		f = open("vcf2gds.config", "a")
+		f.write("vcf_file ~{vcf}\n")
+		f.write("format ")
 		for py_formattokeep in ['~{sep="','" format}']:
 			f.write(py_formattokeep)
 		f.write("\ngds_file '~{output_file_name}'\n")
@@ -39,7 +38,7 @@ task vcf2gds {
 		CODE
 
 		echo "Calling R script vcfToGds.R"
-		Rscript /usr/local/analysis_pipeline/R/vcf2gds.R "megastep_A.config"
+		Rscript /usr/local/analysis_pipeline/R/vcf2gds.R vcf2gds.config
 	}
 	runtime {
 		docker: "uwgac/topmed-master:2.8.1"
@@ -197,7 +196,7 @@ task check_gds {
 			return [py_thisVcfWithSpace, py_thisChr]
 
 		def write_config(py_file):
-			f = open("checkgds.config", "a")
+			f = open("check_gds.config", "a")
 
 			# write VCF file
 			f.write("vcf_file ")
@@ -236,7 +235,7 @@ task check_gds {
 		echo "Chromosme number is ${BASH_CHR}"
 
 		echo "Calling check_gds.R"
-		Rscript /usr/local/analysis_pipeline/R/check_gds.R checkgds.config --chromosome ${BASH_CHR}
+		Rscript /usr/local/analysis_pipeline/R/check_gds.R check_gds.config --chromosome ${BASH_CHR}
 	>>>
 
 	runtime {
