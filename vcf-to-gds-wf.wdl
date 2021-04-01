@@ -42,7 +42,7 @@ task vcf2gds {
 		Rscript /usr/local/analysis_pipeline/R/vcf2gds.R vcf2gds.config
 	}
 	runtime {
-		cpu: ~{cpu}
+		cpu: cpu
 		docker: "uwgac/topmed-master:2.8.1"
 		disks: "local-disk ${disk} SSD"
 		bootDiskSizeGb: 6
@@ -150,7 +150,7 @@ task unique_variant_id {
 		Rscript /usr/local/analysis_pipeline/R/unique_variant_ids.R unique_variant_ids.config
 	>>>
 	runtime {
-		cpu: ~{cpu}
+		cpu: cpu
 		docker: "uwgac/topmed-master:2.8.1"
 		disks: "local-disk ${disk} SSD"
 		bootDiskSizeGb: 6
@@ -245,7 +245,7 @@ task check_gds {
 	>>>
 
 	runtime {
-		cpu: ~{cpu}
+		cpu: cpu
 		docker: "uwgac/topmed-master:2.8.1"
 		disks: "local-disk ${disk} SSD"
 		bootDiskSizeGb: 6
