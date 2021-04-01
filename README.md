@@ -19,7 +19,7 @@ The original goal of this task was to provide sample preparation options for TOP
 * Due to how Cromwell works, local runs may draw too much memory (see below)
 
 #### Advice for running locally
-If you are running on a local machine, we do not recommend running this on all 23 chromosomes, even on the provided downsampled test data. Cromwell does not support local resource mangement in the same way it does on GCS and other platforms. This can result in a sigkill or locking up Docker, especially when dealing with scattered tasks. [There is a way to reduce the number of simultaneous tasks Cromwell will run](https://github.com/broadinstitute/cromwell/blob/develop/docs/cromwell_features/HogFactors.md), but this doesn't solve every issue. Even if only running on a small number of chromosomes, it is still possible for Cromwell to lock up Docker. Luckily these lockups tend to follow a pattern and can be resolved in a few minutes -- if a task's instance(s) transfer to WaitingForReturnCode but never seem to do anything else, control-C out it, restart Docker, and try again.
+If you are running on a local machine, we do not recommend running this on all 23 chromosomes, even on the provided downsampled test data. Cromwell does not support local resource mangement in the same way it does on GCS and other platforms. This can result in a sigkill or locking up Docker, especially when dealing with scattered tasks. [There is a way to reduce the number of simultaneous tasks Cromwell will run](https://github.com/broadinstitute/cromwell/blob/develop/docs/cromwell_features/HogFactors.md), but this doesn't solve every issue. Even if only running on a small number of chromosomes, it is still possible for Cromwell to lock up Docker. Luckily these lockups tend to follow a pattern and can be resolved in a few minutes -- if a task's instance(s) transfer to WaitingForReturnCode but never seem to do anything else, control-C out, restart Docker, and try again.
 
 #### Advice for running on the cloud
 The original script had arguments relating to runtime such as `ncores` and `cluster_type` that do not apply to WDL. Please familarize yourself with the [runtime attributes of WDL](https://cromwell.readthedocs.io/en/stable/RuntimeAttributes/) if you are unsure how your settings may transfer.
@@ -34,8 +34,8 @@ This script converts vcf.gz/vcf/vcf.bgz/bcf, one per chromosome, to GDS files, d
 * uniquevars_disk
 * uniquevars_memory
 * checkgds_disk
-* checkgds_memory
-Due to how this step localizes files, uniquevars_disk should be at least double the size of your input files.
+* checkgds_memory  
+Due to how the unique variant IDs step localizes files, uniquevars_disk should be at least double the size of your input files.
 
 ### Optional Inputs
 * check_gds : *boolean* -- Run the checkGDS step. Defaults to false, because this step is computationally intense. It is **highly recommended** to skip this step on modern topmed data, as it could take literal days.
