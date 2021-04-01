@@ -49,7 +49,8 @@ task vcf2gds {
 		memory: "${memory} GB"
 	}
 	output {
-		File out = output_file_name
+		File gds_output = output_file_name
+		File config_file = "vcf2gds.config"
 	}
 }
 
@@ -287,7 +288,7 @@ workflow a_vcftogds {
 	
 	call unique_variant_id {
 		input:
-			gdss = vcf2gds.out,
+			gdss = vcf2gds.gds_output,
 			chrs = chrs,
 			cpu = uniquevars_cpu,
 			disk = uniquevars_disk,
