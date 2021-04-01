@@ -152,7 +152,7 @@ task unique_variant_id {
 		memory: "${memory} GB"
 	}
 	output {
-		Array[File] out = glob("*.gds")
+		Array[File] unique_variant_id_gds_per_chr = glob("*.gds")
 	}
 }
 
@@ -256,13 +256,13 @@ workflow a_vcftogds {
 		# runtime attributes
 		# [1] vcf2gds
 		Int vcfgds_disk
-		Int vcfgds_memory
+		Int? vcfgds_memory
 		# [2] uniquevarids
 		Int uniquevars_disk
-		Int uniquevars_memory
+		Int? uniquevars_memory
 		# [3] checkgds
 		Int checkgds_disk
-		Int checkgds_memory
+		Int? checkgds_memory
 	}
 
 	scatter(vcf_file in vcf_files) {
@@ -271,7 +271,7 @@ workflow a_vcftogds {
 				vcf = vcf_file,
 				format = format,
 				disk = vcfgds_disk,
-				memory = vcfgds_memory
+				memory = select_first(vcfgds_memory, 4)
 		}
 	}
 	
@@ -280,17 +280,17 @@ workflow a_vcftogds {
 			gdss = vcf2gds.out,
 			chrs = chrs,
 			disk = uniquevars_disk,
-			memory = uniquevars_memory
+			memory = select_first(uniquevars_memory, 4)
 	}
 	
 	if(check_gds) {
-		scatter(gds in unique_variant_id.out) {
+		scatter(gds in unique_variant_id.unique_variant_id_gds_per_chr) {
 			call check_gds {
 				input:
 					gds = gds,
 					vcfs = vcf_files,
 					disk = checkgds_disk,
-					memory = checkgds_memory
+					memory = select_first(checkgds_memory, 4)
 			}
 		}
 	}
