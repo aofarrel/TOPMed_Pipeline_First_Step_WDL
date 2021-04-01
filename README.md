@@ -3,13 +3,12 @@
 ![help wanted](https://img.shields.io/badge/help-wanted-red)**WIP; not suitable for published use**![help wanted](https://img.shields.io/badge/help-wanted-red)
 ---
 [![WDL 1.0 shield](https://img.shields.io/badge/WDL-1.0-lightgrey.svg)](https://github.com/openwdl/wdl/blob/main/versions/1.0/SPEC.md)  
-This is a collection of several WDL files which attempt to implement some components of the [University of Washington TOPMed pipeline](https://github.com/UW-GAC/analysis_pipeline). Rather than running as a Python pipeline, this takes the R scripts which the Python pipeline is calling and wraps them into various WDL tasks. The original goal of this task was to provide sample preparation options for TOPMed Freeze 8 users on Terra, who previously had to work with an unoptimized Jupyter notebook, but it may have wider applications than that. Still, to that end, it is **not complete** and it should not be used for publications at this point in time.
+This is a collection of several WDL files which attempt to implement some components of the [University of Washington TOPMed pipeline](https://github.com/UW-GAC/analysis_pipeline). Rather than running as a Python pipeline, this takes the R scripts which the Python pipeline is calling and wraps them into various WDL tasks.
 
 Example files are provided in `testdata`.
 
-The original script had arguments relating to runtime such as `ncores` and `cluster_type` that do not apply to WDL. Please familarize yourself with the [runtime attributes of WDL](https://cromwell.readthedocs.io/en/stable/RuntimeAttributes/) if you are unsure how your settings may transfer.
-
-The current component, a_vcftogds.wdl, converts vcf.gz/vcf/vcf.bgz/bcf input into gds, gives all converted gds files unique varient IDs, and optionally checks the resulting gds files with their original vcf inputs for consistency. This represents [the first "chunk" of the original pipeline](https://github.com/UW-GAC/analysis_pipeline#conversion-to-gds) minus the currently-not-recommend optional merge. Merging is still planned to be supported, but only after linkage disequilbrium (also in-progress) is calculated.
+## Motivation
+The original goal of this task was to provide sample preparation options for TOPMed Freeze 8 users on Terra, who previously had to work with an unoptimized Jupyter notebook. While we hope that this can eventually be used for that case, the scope has since widened for other forms of analysis, and in the name of interoperability between CWL-based platforms and WDL-based platforms. For that reason, this pipeline is designed to be as close to [the CWL version](https://github.com/UW-GAC/analysis_pipeline_cwl) as possible.
 
 ## Bonuses
 * The original script required a space to be included in input files. This is no longer necessary.
@@ -22,8 +21,11 @@ The current component, a_vcftogds.wdl, converts vcf.gz/vcf/vcf.bgz/bcf input int
 #### Advice for running locally
 If you are running on a local machine, we do not recommend running this on all 23 chromosomes, even on the provided downsampled test data. Cromwell does not support local resource mangement in the same way it does on GCS and other platforms. This can result in a sigkill or locking up Docker, especially when dealing with scattered tasks. [There is a way to reduce the number of simultaneous tasks Cromwell will run](https://github.com/broadinstitute/cromwell/blob/develop/docs/cromwell_features/HogFactors.md), but this doesn't solve every issue. Even if only running on a small number of chromosomes, it is still possible for Cromwell to lock up Docker. Luckily these lockups tend to follow a pattern and can be resolved in a few minutes -- if a task's instance(s) transfer to WaitingForReturnCode but never seem to do anything else, control-C out it, restart Docker, and try again.
 
-# Conversion to GDS (a_vcftogds.wdl)
-This script converts VCF, one per chromosome, to GDS files, discarding non-genotype FORMAT fields by default (but this can be changed, see optional inputs).  
+#### Advice for running on the cloud
+The original script had arguments relating to runtime such as `ncores` and `cluster_type` that do not apply to WDL. Please familarize yourself with the [runtime attributes of WDL](https://cromwell.readthedocs.io/en/stable/RuntimeAttributes/) if you are unsure how your settings may transfer.
+
+# Conversion to GDS (vcf-to-gds-wf.wdl)
+This script converts vcf.gz/vcf/vcf.bgz/bcf, one per chromosome, to GDS files, discarding non-genotype FORMAT fields by default (but this can be changed, see optional inputs). It then provides each variant across the files with unique variant IDs for later compatiability with PLINK, and optionally checks the resulting GDS files against their original inputs for consistency. This represents [the first "chunk" of the original pipeline](https://github.com/UW-GAC/analysis_pipeline#conversion-to-gds) minus the currently-not-recommend optional merge. Merging is still planned to be supported, but only after linkage disequilbrium (also in-progress) is calculated.  
 
 ### Required Inputs
 * vcf : an *array of vcf files* in vcf, .vcf.bgz, .vcf.gz, .bcf, or any combination thereof format
