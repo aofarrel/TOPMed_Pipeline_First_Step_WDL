@@ -17,6 +17,7 @@ task vcf2gds {
 		String output_file_name = basename(sub(vcf, "\.vcf\.gz(?!.{1,})|\.vcf\.bgz(?!.{5,})|\.vcf(?!.{5,})|\.bcf(?!.{1,})", ".gds"))
 		Array[String] format # vcf formats to keep
 		# runtime attributes
+		Int cpu
 		Int disk
 		Int memory
 	}
@@ -41,6 +42,7 @@ task vcf2gds {
 		Rscript /usr/local/analysis_pipeline/R/vcf2gds.R vcf2gds.config
 	}
 	runtime {
+		cpu: ~{cpu}
 		docker: "uwgac/topmed-master:2.8.1"
 		disks: "local-disk ${disk} SSD"
 		bootDiskSizeGb: 6
@@ -57,6 +59,7 @@ task unique_variant_id {
 		Array[File] gdss
 		Array[String] chrs
 		# runtime attr
+		Int cpu
 		Int disk
 		Int memory
 	}
@@ -146,6 +149,7 @@ task unique_variant_id {
 		Rscript /usr/local/analysis_pipeline/R/unique_variant_ids.R unique_variant_ids.config
 	>>>
 	runtime {
+		cpu: ~{cpu}
 		docker: "uwgac/topmed-master:2.8.1"
 		disks: "local-disk ${disk} SSD"
 		bootDiskSizeGb: 6
@@ -166,6 +170,7 @@ task check_gds {
 		String uncompressed = basename(sub(gds, "\\.gds$", ".vcf"))
 		String bcf = basename(sub(gds, "\\.gds$", ".bcf"))
 		# runtime attr
+		Int cpu
 		Int disk
 		Int memory
 	}
@@ -239,6 +244,7 @@ task check_gds {
 	>>>
 
 	runtime {
+		cpu: ~{cpu}
 		docker: "uwgac/topmed-master:2.8.1"
 		disks: "local-disk ${disk} SSD"
 		bootDiskSizeGb: 6
@@ -255,14 +261,17 @@ workflow a_vcftogds {
 
 		# runtime attributes
 		# [1] vcf2gds
+		Int vcfgds_cpu = 1
 		Int vcfgds_disk
-		Int? vcfgds_memory
+		Int vcfgds_memory = 4
 		# [2] uniquevarids
+		Int uniquevars_cpu = 1
 		Int uniquevars_disk
-		Int? uniquevars_memory
+		Int uniquevars_memory = 4
 		# [3] checkgds
+		Int checkgds_cpu = 1
 		Int checkgds_disk
-		Int? checkgds_memory
+		Int checkgds_memory = 4
 	}
 
 	scatter(vcf_file in vcf_files) {
@@ -270,8 +279,9 @@ workflow a_vcftogds {
 			input:
 				vcf = vcf_file,
 				format = format,
+				cpu = vcfgds_cpu,
 				disk = vcfgds_disk,
-				memory = select_first(vcfgds_memory, 4)
+				memory = vcfgds_memory
 		}
 	}
 	
@@ -279,8 +289,9 @@ workflow a_vcftogds {
 		input:
 			gdss = vcf2gds.out,
 			chrs = chrs,
+			cpu = uniquevars_cpu,
 			disk = uniquevars_disk,
-			memory = select_first(uniquevars_memory, 4)
+			memory = uniquevars_memory
 	}
 	
 	if(check_gds) {
@@ -289,8 +300,9 @@ workflow a_vcftogds {
 				input:
 					gds = gds,
 					vcfs = vcf_files,
+					cpu = checkgds_cpu,
 					disk = checkgds_disk,
-					memory = select_first(checkgds_memory, 4)
+					memory = checkgds_memory
 			}
 		}
 	}
