@@ -58,7 +58,6 @@ task vcf2gds {
 task unique_variant_id {
 	input {
 		Array[File] gdss
-		Array[String] chrs
 		# runtime attr
 		Int cpu
 		Int disk
@@ -79,72 +78,106 @@ task unique_variant_id {
 		echo "Generating config file"
 		python << CODE
 		import os
-		py_gdsarrayfull = ['~{sep="','" gdss}']
-		py_chrarray = ['~{sep="','" chrs}']
-		py_gdsarray = []
-		for fullpath in py_gdsarrayfull:
-			py_gdsarray.append(os.path.basename(fullpath))
-		py_gdsarray.sort() # this is important!
-		
-		f = open("unique_variant_ids.config", "a")
-		f.write("chromosomes ")
-		f.write("'")
-		for py_chr in py_chrarray:
-			f.write(py_chr)
-			f.write(" ")
-		f.write("'")
-		f.write("\nvcf_file this_is_a_bogus_name.vcf")
-		f.write("\ngds_file ")
-		py_listicle = []
 
-		# The R script expects input filenames to have a space in them. What
-		# we're doing here is checking the filenames of chr1 and chr2, under
-		# the assumption the only difference between them is the numbers 1
-		# and 2 respectively. So, where they match, that forms our input
-		# filename for the config file, and where they differ (the number)
-		# is replaced with a space.
-
-		if ( 22 <= len(py_gdsarray) <= 25):
-			# 22 chrs assumes chr1-22, 23 assumes 1-22+X, 24 assumes 1-22+XY,
-			# and 25 assumes 1-22+XYM -- in all of these situations, the 0th
-			# element should be chr1 and the 11th element should be chr2
-			if(len(os.path.basename(py_gdsarray[0])) == len(os.path.basename(py_gdsarray[11]))):
-				for charA, charB in zip(os.path.basename(py_gdsarray[0]), os.path.basename(py_gdsarray[11])):
-					if charA == charB:
-						py_listicle.append(charA)
-					else:
-						py_listicle.append(" ")
-
-			else:
-				print("WARNING: Strange chromosome numbering detected. This pipeline is only designed for human chr1-22+X.")
-				for charA, charB in zip(os.path.basename(py_gdsarray[0]), os.path.basename(py_gdsarray[1])):
-					if charA == charB:
-						py_listicle.append(charA)
-					else:
-						py_listicle.append(" ")
-
-		else:
-			# The only reason we don't error out here is because the user may be
-			# running a test on under 22 chromosomes. That being said this isn't
-			# a robust way of handling this.
-			print("WARNING: Very weird number of chromosomes detected. This pipeline is only designed for human chr1-22+X.")
-			print("Attempting %s and %s" % (os.path.basename(py_gdsarray[0]), os.path.basename(py_gdsarray[1])))
-			for charA, charB in zip(os.path.basename(py_gdsarray[0]), os.path.basename(py_gdsarray[1])):
-				print(charA)
-				print(charB)
-				print("--")
+		def fallback_comparison(file1, file2):
+			space_where_differ = []
+			for charA, charB in zip(file1, file2):
 				if charA == charB:
-					py_listicle.append(charA)
+					space_where_differ.append(charA)
 				else:
-					py_listicle.append(" ")
+					space_where_differ.append(" ")
+			return space_where_differ
+
+		def find_chromosome(gds):
+			chr_array = []
+			chrom_num = split_on_chromosome(gds)
+			if(unicode(str(chrom_num[1])).isnumeric()):
+				# two digit number
+				chr_array.append(chrom_num[0])
+				chr_array.append(chrom_num[1])
+			else:
+				# one digit number or Y/X/M
+				chr_array.append(chrom_num[0])
+			return "".join(chr_array)
+
+		def split_on_chromosome(gds):
+			chrom_num = gds
+			if "chr" in chrom_num:
+				chrom_num = chrom_num.split("chr")[1]
+			elif "chromosome" in chrom_num:
+				chrom_num = chrom_num.split("chromosome")[1]
+			else:
+				return "call-fallback-method"
+			return chrom_num
+
+		def write_chromosomes(chr_array):
+			f = open("unique_variant_ids.config", "a")
+			f.write("chromosomes ")
+			f.write("'")
+			for chr in chr_array:
+				f.write(chr)
+				f.write(" ")
+			f.write("'")
+			f.close()
+
+		def write_gds(precisely_one_gds_split):
+			f = open("unique_variant_ids.config", "a")
+			f.write("\ngds_file ")
+			f.write("'")
+			f.write(precisely_one_gds_split[0])
+			f.write(" ")
+			f.write(precisely_one_gds_split[2])
+			f.write("'")
+			f.close()
+
+		gds_array_fullpath = ['~{sep="','" gdss}']
+		gds_array_basenames = []
+		for fullpath in gds_array_fullpath:
+			gds_array_basenames.append(os.path.basename(fullpath))
+		gds_array_basenames.sort() # this is important for fallback
+
+		if(find_chromosome(os.path.basename(gds_array_basenames[0])) != "call-fallback-method"):
+			chr_array = []
+			i = 0
+			for gds_file in gds_array_basenames:
+				this_chr = find_chromosome(gds_file)
+				chr_array.append(this_chr)
+			write_chromosomes(chr_array)
+			say_my_name = split_on_chromosome(gds_array_basenames[0])
 		
-		py_name = "".join(py_listicle)
-		f.write("'")
-		f.write(py_name)
-		f.write("'")
-		f.write("\nmerged_gds_file 'merged.gds'\n")
-		f.close()
-		exit()
+		else:
+			# This is meant to handle cases where chromsomes are in the filename
+			# like "c1" instead of "chr1." Provided the user inputs the usual
+			# 22-25 chrs it is robust, otherwise, it's... not great
+			
+			fallback_chr_array = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,"X"]
+			write_chromosomes(fallback_chr_array)
+			
+			# The R script expects input filenames to have a space in them. What
+			# we're doing here is checking the filenames of chr1 and chr2, under
+			# the assumption the only difference between them is the numbers 1
+			# and 2 respectively. So, where they match, that forms our input
+			# filename for the config file, and where they differ (the number)
+			# is replaced with a space.
+			
+			if(22 <= len(gds_array_basenames) <= 25):
+				# 22 chrs assumes chr1-22, 23 assumes 1-22+X, 24 assumes 1-22+XY,
+				# and 25 assumes 1-22+XYM -- in all of these situations, the 0th
+				# element should be chr1 and the 11th element should be chr2
+				if(len(os.path.basename(gds_array_basenames[0])) == len(os.path.basename(gds_array_basenames[11]))):
+					space_where_differ = fallback_comparison(os.path.basename(gds_array_basenames[0], os.path.basename(gds_array_basenames[11])))
+				else:
+					print("WARNING: Strange chromosome numbering detected. This pipeline is only designed for human chr1-22+X.")
+					space_where_differ = fallback_comparison(os.path.basename(gds_array_basenames[0], os.path.basename(gds_array_basenames[1])))
+			else:
+				# The only reason we don't error out here is because the user may be
+				# running a test on under 22 chromosomes. That being said this isn't
+				# a robust way of handling this.
+				print("WARNING: Very weird number of chromosomes detected. This pipeline is only designed for human chr1-22+X.")
+				print("Attempting %s and %s" % (os.path.basename(gds_array_basenames[0]), os.path.basename(gds_array_basenames[1])))
+				space_where_differ = fallback_comparison(os.path.basename(gds_array_basenames[0], os.path.basename(gds_array_basenames[11])))
+			write_gds(space_where_differ)
+			exit()
 		CODE
 		echo "Calling uniqueVariantIDs.R"
 		Rscript /usr/local/analysis_pipeline/R/unique_variant_ids.R unique_variant_ids.config
@@ -256,7 +289,6 @@ task check_gds {
 workflow a_vcftogds {
 	input {
 		Array[File] vcf_files
-		Array[String] chrs = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,"X"]
 		Array[String] format = ["GT"]
 		Boolean check_gds = false
 
@@ -289,7 +321,6 @@ workflow a_vcftogds {
 	call unique_variant_id {
 		input:
 			gdss = vcf2gds.gds_output,
-			chrs = chrs,
 			cpu = uniquevars_cpu,
 			disk = uniquevars_disk,
 			memory = uniquevars_memory
