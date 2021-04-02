@@ -1,5 +1,5 @@
 {
-  "a_vcftogds.vcf_files": ["testdata/1KG_phase3_subset_chr1.bcf", "testdata/1KG_phase3_subset_chr2.vcf", "testdata/1KG_phase3_subset_chr3.vcf.bgz", "testdata/1KG_phase3_subset_chr20.vcf.gz", "testdata/1KG_phase3_subset_chrX.vcf"],
+  "a_vcftogds.vcf_files": ["testdata/1KG_phase3_subset_chr1.vcf.gz", "testdata/1KG_phase3_subset_chr2.vcf.gz", "testdata/1KG_phase3_subset_chr3.vcf.gz", "testdata/1KG_phase3_subset_chr20.vcf.gz", "testdata/1KG_phase3_subset_chrX.vcf.gz"],
   "a_vcftogds.vcfgds_disk": 50,
   "a_vcftogds.vcfgds_memory": 10,
   "a_vcftogds.uniquevars_disk": 50,
