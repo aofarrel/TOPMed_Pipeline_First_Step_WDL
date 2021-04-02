@@ -91,21 +91,26 @@ task unique_variant_id {
 		def find_chromosome(gds):
 			chr_array = []
 			chrom_num = split_on_chromosome(gds)
-			if(unicode(str(chrom_num[1])).isnumeric()):
+			print(chrom_num)
+			if(unicode(str(chrom_num[1][1])).isnumeric()):
 				# two digit number
-				chr_array.append(chrom_num[0])
-				chr_array.append(chrom_num[1])
+				chr_array.append(chrom_num[1][0])
+				chr_array.append(chrom_num[1][1])
 			else:
 				# one digit number or Y/X/M
-				chr_array.append(chrom_num[0])
+				chr_array.append(chrom_num[1][0])
 			return "".join(chr_array)
 
 		def split_on_chromosome(gds):
+			# if input is "amishchr1.gds"
+			# output is ["amish", ".gds", "chr"]
 			chrom_num = gds
 			if "chr" in chrom_num:
-				chrom_num = chrom_num.split("chr")[1]
+				chrom_num = chrom_num.split("chr")
+				chrom_num.append("chr")
 			elif "chromosome" in chrom_num:
-				chrom_num = chrom_num.split("chromosome")[1]
+				chrom_num = chrom_num.split("chromosome")
+				chrom_num.append("chromosome")
 			else:
 				return "call-fallback-method"
 			return chrom_num
@@ -125,8 +130,14 @@ task unique_variant_id {
 			f.write("\ngds_file ")
 			f.write("'")
 			f.write(precisely_one_gds_split[0])
-			f.write(" ")
 			f.write(precisely_one_gds_split[2])
+			f.write(" ")
+			if(unicode(str(precisely_one_gds_split[1][1])).isnumeric()):
+				# two digit number
+				f.write(precisely_one_gds_split[1][2:])
+			else:
+				# one digit number or Y/X/M
+				f.write(precisely_one_gds_split[1][1:])
 			f.write("'")
 			f.close()
 
@@ -144,21 +155,26 @@ task unique_variant_id {
 				chr_array.append(this_chr)
 			write_chromosomes(chr_array)
 			say_my_name = split_on_chromosome(gds_array_basenames[0])
+			write_gds(say_my_name)
 		
+		############################ fallback ############################
+		# This is meant to handle cases where chromsomes are in the filename
+		# like "c1" instead of "chr1." Provided the user inputs the usual
+		# 22-25 chrs it is robust, otherwise, it's... not great.
+		# The R script expects input filenames to have a space in them.
+		# So, we're checking the filenames of chr1 and chr2, under
+		# the assumption the only difference between them is the numbers 1
+		# and 2 respectively. So, where they match, that forms our input
+		# filename for the config file, and where they differ (the number)
+		# is replaced with a space. But because two-digit numbers are two
+		# characters of difference while one digit numbers are one, we have
+		# to rely on the list of gds files being ordered + containing
+		# the expected number of single and double digit files.
+		##################################################################
 		else:
-			# This is meant to handle cases where chromsomes are in the filename
-			# like "c1" instead of "chr1." Provided the user inputs the usual
-			# 22-25 chrs it is robust, otherwise, it's... not great
 			
 			fallback_chr_array = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,"X"]
 			write_chromosomes(fallback_chr_array)
-			
-			# The R script expects input filenames to have a space in them. What
-			# we're doing here is checking the filenames of chr1 and chr2, under
-			# the assumption the only difference between them is the numbers 1
-			# and 2 respectively. So, where they match, that forms our input
-			# filename for the config file, and where they differ (the number)
-			# is replaced with a space.
 			
 			if(22 <= len(gds_array_basenames) <= 25):
 				# 22 chrs assumes chr1-22, 23 assumes 1-22+X, 24 assumes 1-22+XY,
@@ -171,9 +187,8 @@ task unique_variant_id {
 					space_where_differ = fallback_comparison(os.path.basename(gds_array_basenames[0], os.path.basename(gds_array_basenames[1])))
 			else:
 				# The only reason we don't error out here is because the user may be
-				# running a test on under 22 chromosomes. That being said this isn't
-				# a robust way of handling this.
-				print("WARNING: Very weird number of chromosomes detected. This pipeline is only designed for human chr1-22+X.")
+				# running a test on under 22 chromosomes. This is a crapshoot.
+				print("WARNING: Unusual number of chromosomes detected. This pipeline is only designed for human chr1-22+X.")
 				print("Attempting %s and %s" % (os.path.basename(gds_array_basenames[0]), os.path.basename(gds_array_basenames[1])))
 				space_where_differ = fallback_comparison(os.path.basename(gds_array_basenames[0], os.path.basename(gds_array_basenames[11])))
 			write_gds(space_where_differ)
