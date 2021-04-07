@@ -81,7 +81,6 @@ task unique_variant_id {
 		def find_chromosome(file):
 			chr_array = []
 			chrom_num = split_on_chromosome(file)
-			print(chrom_num)
 			if(unicode(str(chrom_num[1][1])).isnumeric()):
 				# two digit number
 				chr_array.append(chrom_num[1][0])
@@ -98,11 +97,8 @@ task unique_variant_id {
 			if "chr" in chrom_num:
 				chrom_num = chrom_num.split("chr")
 				chrom_num.append("chr")
-			elif "chromosome" in chrom_num:
-				chrom_num = chrom_num.split("chromosome")
-				chrom_num.append("chromosome")
 			else:
-				return "call-fallback-method"
+				return "error-invalid-inputs"
 			return chrom_num
 
 		def write_chromosomes(chr_array):
@@ -136,7 +132,7 @@ task unique_variant_id {
 		for fullpath in gds_array_fullpath:
 			gds_array_basenames.append(os.path.basename(fullpath))
 
-		if(find_chromosome(os.path.basename(gds_array_basenames[0])) != "call-fallback-method"):
+		if(find_chromosome(os.path.basename(gds_array_basenames[0])) != "error-invalid-inputs"):
 			chr_array = []
 			i = 0
 			for gds_file in gds_array_basenames:
