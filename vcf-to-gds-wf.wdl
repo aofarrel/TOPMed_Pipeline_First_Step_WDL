@@ -43,7 +43,7 @@ task vcf2gds {
 	}
 	runtime {
 		cpu: cpu
-		docker: "uwgac/topmed-master:2.8.1"
+		docker: "uwgac/topmed-master:2.10.0"
 		disks: "local-disk ${disk} SSD"
 		bootDiskSizeGb: 6
 		memory: "${memory} GB"
@@ -159,7 +159,7 @@ task unique_variant_id {
 	>>>
 	runtime {
 		cpu: cpu
-		docker: "uwgac/topmed-master:2.8.1"
+		docker: "uwgac/topmed-master:2.10.0"
 		disks: "local-disk ${disk} SSD"
 		bootDiskSizeGb: 6
 		memory: "${memory} GB"
@@ -254,7 +254,7 @@ task check_gds {
 
 	runtime {
 		cpu: cpu
-		docker: "uwgac/topmed-master:2.8.1"
+		docker: "uwgac/topmed-master:2.10.0"
 		disks: "local-disk ${disk} SSD"
 		bootDiskSizeGb: 6
 		memory: "${memory} GB"
