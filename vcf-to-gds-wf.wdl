@@ -33,7 +33,6 @@ task vcf2gds {
 		for py_formattokeep in ['~{sep="','" format}']:
 			f.write(py_formattokeep)
 		f.write("\ngds_file '~{output_file_name}'\n")
-		f.write("merged_gds_file 'merged.gds'")
 		f.close()
 		exit()
 		CODE
