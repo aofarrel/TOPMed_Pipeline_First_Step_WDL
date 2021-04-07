@@ -33,7 +33,6 @@ task vcf2gds {
 		for py_formattokeep in ['~{sep="','" format}']:
 			f.write(py_formattokeep)
 		f.write("\ngds_file '~{output_file_name}'\n")
-		f.write("merged_gds_file 'merged.gds'")
 		f.close()
 		exit()
 		CODE
@@ -43,7 +42,7 @@ task vcf2gds {
 	}
 	runtime {
 		cpu: cpu
-		docker: "uwgac/topmed-master:2.8.1"
+		docker: "uwgac/topmed-master:2.10.0"
 		disks: "local-disk ${disk} SSD"
 		bootDiskSizeGb: 6
 		memory: "${memory} GB"
@@ -58,7 +57,6 @@ task vcf2gds {
 task unique_variant_id {
 	input {
 		Array[File] gdss
-		Array[String] chrs
 		# runtime attr
 		Int cpu
 		Int disk
@@ -79,79 +77,88 @@ task unique_variant_id {
 		echo "Generating config file"
 		python << CODE
 		import os
-		py_gdsarrayfull = ['~{sep="','" gdss}']
-		py_chrarray = ['~{sep="','" chrs}']
-		py_gdsarray = []
-		for fullpath in py_gdsarrayfull:
-			py_gdsarray.append(os.path.basename(fullpath))
-		py_gdsarray.sort() # this is important!
-		
-		f = open("unique_variant_ids.config", "a")
-		f.write("chromosomes ")
-		f.write("'")
-		for py_chr in py_chrarray:
-			f.write(py_chr)
-			f.write(" ")
-		f.write("'")
-		f.write("\nvcf_file this_is_a_bogus_name.vcf")
-		f.write("\ngds_file ")
-		py_listicle = []
 
-		# The R script expects input filenames to have a space in them. What
-		# we're doing here is checking the filenames of chr1 and chr2, under
-		# the assumption the only difference between them is the numbers 1
-		# and 2 respectively. So, where they match, that forms our input
-		# filename for the config file, and where they differ (the number)
-		# is replaced with a space.
-
-		if ( 22 <= len(py_gdsarray) <= 25):
-			# 22 chrs assumes chr1-22, 23 assumes 1-22+X, 24 assumes 1-22+XY,
-			# and 25 assumes 1-22+XYM -- in all of these situations, the 0th
-			# element should be chr1 and the 11th element should be chr2
-			if(len(os.path.basename(py_gdsarray[0])) == len(os.path.basename(py_gdsarray[11]))):
-				for charA, charB in zip(os.path.basename(py_gdsarray[0]), os.path.basename(py_gdsarray[11])):
-					if charA == charB:
-						py_listicle.append(charA)
-					else:
-						py_listicle.append(" ")
-
+		def find_chromosome(gds):
+			chr_array = []
+			chrom_num = split_on_chromosome(gds)
+			print(chrom_num)
+			if(unicode(str(chrom_num[1][1])).isnumeric()):
+				# two digit number
+				chr_array.append(chrom_num[1][0])
+				chr_array.append(chrom_num[1][1])
 			else:
-				print("WARNING: Strange chromosome numbering detected. This pipeline is only designed for human chr1-22+X.")
-				for charA, charB in zip(os.path.basename(py_gdsarray[0]), os.path.basename(py_gdsarray[1])):
-					if charA == charB:
-						py_listicle.append(charA)
-					else:
-						py_listicle.append(" ")
+				# one digit number or Y/X/M
+				chr_array.append(chrom_num[1][0])
+			return "".join(chr_array)
+
+		def split_on_chromosome(gds):
+			# if input is "amishchr1.gds"
+			# output is ["amish", ".gds", "chr"]
+			chrom_num = gds
+			if "chr" in chrom_num:
+				chrom_num = chrom_num.split("chr")
+				chrom_num.append("chr")
+			elif "chromosome" in chrom_num:
+				chrom_num = chrom_num.split("chromosome")
+				chrom_num.append("chromosome")
+			else:
+				return "call-fallback-method"
+			return chrom_num
+
+		def write_chromosomes(chr_array):
+			f = open("unique_variant_ids.config", "a")
+			f.write("chromosomes ")
+			f.write("'")
+			for chr in chr_array:
+				f.write(chr)
+				f.write(" ")
+			f.write("'")
+			f.close()
+
+		def write_gds(precisely_one_gds_split):
+			f = open("unique_variant_ids.config", "a")
+			f.write("\ngds_file ")
+			f.write("'")
+			f.write(precisely_one_gds_split[0])
+			f.write(precisely_one_gds_split[2])
+			f.write(" ")
+			if(unicode(str(precisely_one_gds_split[1][1])).isnumeric()):
+				# two digit number
+				f.write(precisely_one_gds_split[1][2:])
+			else:
+				# one digit number or Y/X/M
+				f.write(precisely_one_gds_split[1][1:])
+			f.write("'")
+			f.close()
+
+		gds_array_fullpath = ['~{sep="','" gdss}']
+		gds_array_basenames = []
+		for fullpath in gds_array_fullpath:
+			gds_array_basenames.append(os.path.basename(fullpath))
+
+		if(find_chromosome(os.path.basename(gds_array_basenames[0])) != "call-fallback-method"):
+			chr_array = []
+			i = 0
+			for gds_file in gds_array_basenames:
+				this_chr = find_chromosome(gds_file)
+				chr_array.append(this_chr)
+			write_chromosomes(chr_array)
+			say_my_name = split_on_chromosome(gds_array_basenames[0])
+			write_gds(say_my_name)
 
 		else:
-			# The only reason we don't error out here is because the user may be
-			# running a test on under 22 chromosomes. That being said this isn't
-			# a robust way of handling this.
-			print("WARNING: Very weird number of chromosomes detected. This pipeline is only designed for human chr1-22+X.")
-			print("Attempting %s and %s" % (os.path.basename(py_gdsarray[0]), os.path.basename(py_gdsarray[1])))
-			for charA, charB in zip(os.path.basename(py_gdsarray[0]), os.path.basename(py_gdsarray[1])):
-				print(charA)
-				print(charB)
-				print("--")
-				if charA == charB:
-					py_listicle.append(charA)
-				else:
-					py_listicle.append(" ")
-		
-		py_name = "".join(py_listicle)
-		f.write("'")
-		f.write(py_name)
-		f.write("'")
-		f.write("\nmerged_gds_file 'merged.gds'\n")
-		f.close()
-		exit()
+			print("Unable to determine chromosome number from inputs.")
+			print("Please ensure your files contain ''chrX'' where X")
+			print("equals the number or letter of that chromosome.")
+			exit(1)
 		CODE
+		
 		echo "Calling uniqueVariantIDs.R"
 		Rscript /usr/local/analysis_pipeline/R/unique_variant_ids.R unique_variant_ids.config
 	>>>
 	runtime {
 		cpu: cpu
-		docker: "uwgac/topmed-master:2.8.1"
+		docker: "uwgac/topmed-master:2.10.0"
 		disks: "local-disk ${disk} SSD"
 		bootDiskSizeGb: 6
 		memory: "${memory} GB"
@@ -246,7 +253,7 @@ task check_gds {
 
 	runtime {
 		cpu: cpu
-		docker: "uwgac/topmed-master:2.8.1"
+		docker: "uwgac/topmed-master:2.10.0"
 		disks: "local-disk ${disk} SSD"
 		bootDiskSizeGb: 6
 		memory: "${memory} GB"
@@ -256,7 +263,6 @@ task check_gds {
 workflow a_vcftogds {
 	input {
 		Array[File] vcf_files
-		Array[String] chrs = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,"X"]
 		Array[String] format = ["GT"]
 		Boolean check_gds = false
 
@@ -289,7 +295,6 @@ workflow a_vcftogds {
 	call unique_variant_id {
 		input:
 			gdss = vcf2gds.gds_output,
-			chrs = chrs,
 			cpu = uniquevars_cpu,
 			disk = uniquevars_disk,
 			memory = uniquevars_memory
