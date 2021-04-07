@@ -80,28 +80,29 @@ task unique_variant_id {
 
 		def find_chromosome(file):
 			chr_array = []
-			chrom_num = file
-			if "chr" in chrom_num:
-				chrom_num = chrom_num.split("chr")
-				chrom_num.append("chr")
-				if(unicode(str(chrom_num[1][1])).isnumeric()):
-					# two digit number
-					chr_array.append(chrom_num[1][0])
-					chr_array.append(chrom_num[1][1])
-				else:
-					# one digit number or Y/X/M
-					chr_array.append(chrom_num[1][0])
-				return "".join(chr_array)
+			chrom_num = split_on_chromosome(file)
+			print(chrom_num)
+			if(unicode(str(chrom_num[1][1])).isnumeric()):
+				# two digit number
+				chr_array.append(chrom_num[1][0])
+				chr_array.append(chrom_num[1][1])
 			else:
-				return "error-invalid-input"
+				# one digit number or Y/X/M
+				chr_array.append(chrom_num[1][0])
+			return "".join(chr_array)
 
 		def split_on_chromosome(file):
+			# if input is "amishchr1.gds"
+			# output is ["amish", ".gds", "chr"]
 			chrom_num = file
 			if "chr" in chrom_num:
 				chrom_num = chrom_num.split("chr")
 				chrom_num.append("chr")
+			elif "chromosome" in chrom_num:
+				chrom_num = chrom_num.split("chromosome")
+				chrom_num.append("chromosome")
 			else:
-				return "error-invalid-input"
+				return "call-fallback-method"
 			return chrom_num
 
 		def write_chromosomes(chr_array):
@@ -114,14 +115,7 @@ task unique_variant_id {
 			f.write("'")
 			f.close()
 
-		def write_gds(precisely_one_gds):
-			if "chr" in precisely_one_gds:
-				precisely_one_gds_split = precisely_one_gds.split("chr")
-				precisely_one_gds_split.append("chr")
-			else:
-				# we already did this check earlier, so if this fails,
-				# something terrible has happened
-				exit(1)
+		def write_gds(precisely_one_gds_split):
 			f = open("unique_variant_ids.config", "a")
 			f.write("\ngds_file ")
 			f.write("'")
@@ -142,13 +136,15 @@ task unique_variant_id {
 		for fullpath in gds_array_fullpath:
 			gds_array_basenames.append(os.path.basename(fullpath))
 
-		if(find_chromosome(os.path.basename(gds_array_basenames[0])) != "error-invalid-input"):
+		if(find_chromosome(os.path.basename(gds_array_basenames[0])) != "call-fallback-method"):
 			chr_array = []
 			i = 0
 			for gds_file in gds_array_basenames:
 				this_chr = find_chromosome(gds_file)
 				chr_array.append(this_chr)
 			write_chromosomes(chr_array)
+			say_my_name = split_on_chromosome(gds_array_basenames[0])
+			write_gds(say_my_name)
 
 		else:
 			print("Unable to determine chromosome number from inputs.")
