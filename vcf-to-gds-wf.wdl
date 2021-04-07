@@ -78,9 +78,9 @@ task unique_variant_id {
 		python << CODE
 		import os
 
-		def find_chromosome(gds):
+		def find_chromosome(file):
 			chr_array = []
-			chrom_num = split_on_chromosome(gds)
+			chrom_num = split_on_chromosome(file)
 			print(chrom_num)
 			if(unicode(str(chrom_num[1][1])).isnumeric()):
 				# two digit number
@@ -91,10 +91,10 @@ task unique_variant_id {
 				chr_array.append(chrom_num[1][0])
 			return "".join(chr_array)
 
-		def split_on_chromosome(gds):
+		def split_on_chromosome(file):
 			# if input is "amishchr1.gds"
 			# output is ["amish", ".gds", "chr"]
-			chrom_num = gds
+			chrom_num = file
 			if "chr" in chrom_num:
 				chrom_num = chrom_num.split("chr")
 				chrom_num.append("chr")
