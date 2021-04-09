@@ -16,7 +16,6 @@ Please be aware that the third step, check_gds is skipped by default, as it is i
 | uniquevars_cpu		| int 				| 1			| Runtime cores to allot for 2nd task |
 | uniquevars_disk   	| int           	|         	| Runtime disk space to allot for 2nd task                                                                                    	|
 | uniquevars_memory 	| int           	| 4       	| Runtime memory to allot for 2nd task                                                                                        	|
-
 | vcfgds_cpu			| int 				| 1			| Runtime cores to allot for 1st task |
 | vcfgds_disk       	| int           	|         	| Runtime disk space to allot for 1st task                                                                                    	|
 | vcfgds_memory     	| int           	| 4       	| Runtime memory to allot for 1st task                                                                                        	|
