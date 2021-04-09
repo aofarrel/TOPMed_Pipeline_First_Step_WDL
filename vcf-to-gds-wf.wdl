@@ -71,7 +71,7 @@ task unique_variant_id {
 		BASH_FILES=(~{sep=" " gdss})
 		for BASH_FILE in ${BASH_FILES[@]};
 		do
-			cp ${BASH_FILE} .
+			ln -s ${BASH_FILE} .
 		done
 
 		echo "Generating config file"
