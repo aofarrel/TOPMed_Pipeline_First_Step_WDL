@@ -224,8 +224,8 @@ task check_gds {
 			if(py_base == "~{gzvcf}" or py_base == "~{bgzvcf}" or py_base == "~{uncompressed}" or py_base == "~{bcf}"):
 				write_config(py_file)
 
-		# only executes if we reach end of the array without a match
-		print("Failed to find a matching VCF for GDS file: ~{gds}")
+		# only executes if we reach end of the array without a filename match
+		print("Failed to find an associated VCF for GDS file: ~{gds}")
 		exit(1)
 		CODE
 
