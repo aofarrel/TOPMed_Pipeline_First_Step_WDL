@@ -190,19 +190,19 @@ task check_gds {
 				py_thisChr = py_splitstring[1][0:1]
 			return [py_thisVcfWithSpace, py_thisChr]
 
-		def write_config(py_file):
+		def write_config(py_vcf, py_gds):
 			f = open("check_gds.config", "a")
 
 			# write VCF file
 			f.write("vcf_file ")
-			py_thisVcfSplitOnChr = py_file.split("chr")
+			py_thisVcfSplitOnChr = py_vcf.split("chr")
 			f.write("'")
 			f.write(vcf_or_gds_with_space(py_thisVcfSplitOnChr)[0])
 			f.write("'")
 
 			# write GDS file
 			f.write("\ngds_file ")
-			py_thisGdsSplitOnChr = "~{gds}".split("chr")
+			py_thisGdsSplitOnChr = py_gds.split("chr")
 			f.write("'")
 			f.write(vcf_or_gds_with_space(py_thisGdsSplitOnChr)[0])
 			f.write("'")
@@ -217,12 +217,13 @@ task check_gds {
 			exit()
 
 		py_vcfarray = ['~{sep="','" vcfs}']
+		py_gds = "~{gds}"
 		# recall that this is a scattered task and we pass in one gds and the entire vcf array
 		# therefore we have to iterate to discover which vcf matches the gds file input
-		for py_file in py_vcfarray:
-			py_base = os.path.basename(py_file)
+		for py_vcf in py_vcfarray:
+			py_base = os.path.basename(py_vcf)
 			if(py_base == "~{gzvcf}" or py_base == "~{bgzvcf}" or py_base == "~{uncompressed}" or py_base == "~{bcf}"):
-				write_config(py_file)
+				write_config(py_vcf, py_gds)
 
 		# only executes if we reach end of the array without a filename match
 		print("Failed to find an associated VCF for GDS file: ~{gds}")
