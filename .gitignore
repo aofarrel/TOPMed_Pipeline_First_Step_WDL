@@ -24,4 +24,3 @@ Cromwell.stdout.txt
 cromwell-input/*
 docker/*
 notbogus/*
-checker.wdl
