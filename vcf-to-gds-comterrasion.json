@@ -1,10 +1,10 @@
 {
   "a_vcftogds.vcf_files": [
- "gs://fc-7c60650f-4700-4659-94bb-2894ed9a3193/1KG_phase3_subset_chr1.vcf.gz",
- "gs://fc-7c60650f-4700-4659-94bb-2894ed9a3193/1KG_phase3_subset_chr2.vcf.gz",
- "gs://fc-7c60650f-4700-4659-94bb-2894ed9a3193/1KG_phase3_subset_chr3.vcf.gz",
- "gs://fc-7c60650f-4700-4659-94bb-2894ed9a3193/1KG_phase3_subset_chr20.vcf.gz",
- "gs://fc-7c60650f-4700-4659-94bb-2894ed9a3193/1KG_phase3_subset_chrX.vcf.gz"
+ "gs://topmed_workflow_testing/UWGAC_WDL/1KG_phase3_subset_chr1.vcf.gz",
+ "gs://topmed_workflow_testing/UWGAC_WDL/1KG_phase3_subset_chr2.vcf.gz",
+ "gs://topmed_workflow_testing/UWGAC_WDL/1KG_phase3_subset_chr3.vcf.gz",
+ "gs://topmed_workflow_testing/UWGAC_WDL/1KG_phase3_subset_chr20.vcf.gz",
+ "gs://topmed_workflow_testing/UWGAC_WDL/1KG_phase3_subset_chrX.vcf.gz"
 ],
   "a_vcftogds.vcfgds_disk": 50,
   "a_vcftogds.vcfgds_memory": 10,
