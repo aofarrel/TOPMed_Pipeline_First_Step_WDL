@@ -155,6 +155,7 @@ task check_gds {
 	input {
 		File gds
 		Array[File] vcfs
+		File? sample
 		String gzvcf = basename(sub(gds, "\\.gds$", ".vcf.gz"))
 		String bgzvcf =  basename(sub(gds, "\\.gds$", ".vcf.bgz"))
 		String uncompressed = basename(sub(gds, "\\.gds$", ".vcf"))
@@ -168,6 +169,8 @@ task check_gds {
 	command <<<
 		# triple carrot syntax is required for this command section
 		set -eux -o pipefail
+
+
 
 		echo "Searching for VCF and generating config file"
 		python << CODE
@@ -206,6 +209,13 @@ task check_gds {
 			f.write("'")
 			f.write(split_components_add_space(py_thisGdsSplitOnChr)[0])
 			f.write("'")
+
+			# write the sample file
+			if(~{sample}):
+				f.write("sample_file ")
+				f.write("'")
+				f.write("~{sample}")
+				f.write("'")
 
 			# grab chr number and close file
 			py_thisChr = split_components_add_space(py_thisGdsSplitOnChr)[1]
@@ -252,6 +262,7 @@ workflow a_vcftogds {
 		Array[File] vcf_files
 		Array[String] format = ["GT"]
 		Boolean check_gds = false
+		File? sample_file
 
 		# runtime attributes
 		# [1] vcf2gds
@@ -293,6 +304,7 @@ workflow a_vcftogds {
 				input:
 					gds = gds,
 					vcfs = vcf_files,
+					sample = sample_file,
 					cpu = checkgds_cpu,
 					disk = checkgds_disk,
 					memory = checkgds_memory
