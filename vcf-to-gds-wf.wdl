@@ -156,10 +156,6 @@ task check_gds {
 		File gds
 		Array[File] vcfs
 		File? sample
-		String gzvcf = basename(sub(gds, "\\.gds$", ".vcf.gz"))
-		String bgzvcf =  basename(sub(gds, "\\.gds$", ".vcf.bgz"))
-		String uncompressed = basename(sub(gds, "\\.gds$", ".vcf"))
-		String bcf = basename(sub(gds, "\\.gds$", ".bcf"))
 		# runtime attr
 		Int cpu
 		Int disk
@@ -169,8 +165,6 @@ task check_gds {
 	command <<<
 		# triple carrot syntax is required for this command section
 		set -eux -o pipefail
-
-
 
 		echo "Searching for VCF and generating config file"
 		python << CODE
@@ -224,20 +218,14 @@ task check_gds {
 			# write chromosome number to new file, to be read in bash
 			g = open("chr_number", "a")
 			g.write(str(py_thisChr)) # already str if chrX but python won't complain
-			exit()
 
 		py_vcfarray = ['~{sep="','" vcfs}']
 		py_gds = "~{gds}"
 		# recall that this is a scattered task and we pass in one gds and the entire vcf array
 		# therefore we have to iterate to discover which vcf matches the gds file input
-		for py_vcf in py_vcfarray:
-			py_base = os.path.basename(py_vcf)
-			if(py_base == "~{gzvcf}" or py_base == "~{bgzvcf}" or py_base == "~{uncompressed}" or py_base == "~{bcf}"):
-				write_config(py_vcf, py_gds)
-
-		# only executes if we reach end of the array without a filename match
-		print("Failed to find an associated VCF for GDS file: ~{gds}")
-		exit(1)
+		py_vcf = py_vcfarray[0]
+		py_base = os.path.basename(py_vcf)
+		write_config(py_vcf, py_gds)
 		CODE
 
 		echo "Setting chromosome number"
