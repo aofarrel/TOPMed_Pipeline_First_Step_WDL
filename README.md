@@ -20,6 +20,12 @@ The original goal of this undertaking was to provide sample preparation options 
 ## Components
 * [vcf-to-gds-wf](https://github.com/aofarrel/analysis_pipeline_WDL/blob/master/README_vcf-to-gds-wf.md)
 
+## Approach
+The original Python pipeline used small configuration text files which would apply to multiple R scripts. As we are using the same R scripts, we must continue to use configuration files. This can be problematic when using WDL.  
+
+Locally, every WDL task creates a folder with a random integer filename, so communication between tasks is somewhat limited. Outputs from one task can be passed to as inputs to another task, but if an output of one task is a text file specifying a path to an input, then that path is no longer valid because the task that created the text file will have a different random integer in its folder name  In any case, this "task creates the config then uses it" approach
+# mirrors what's in the CWL.
+
 ------
 
 #### Author

@@ -1,14 +1,4 @@
 version 1.0
-# General notes on the "logic" behind this (not necessary reading for users)
-#
-# Configuration files must be created in the same WDL task they are used, or else
-# the task will fail to find the inputs. Locally, every WDL task creates a folder
-# with a random integer filename, so in order to find those inputs if full path
-# is used, the script creating the task must know what folder the inputs will be
-# located in, which it won't if the inputs are used in another task. It may be
-# possible to get around this using relative paths, but that approach appears to
-# be buggier. In any case, this "task creates the config then uses it" approach
-# mirrors what's in the CWL.
 
 # [1] vcf2gds -- converts a VCF file into a GDS file
 task vcf2gds {
@@ -227,12 +217,16 @@ task check_gds {
 			exit()
 
 		py_vcfarray = ['~{sep="','" vcfs}']
+		# recall that this is a scattered task and we pass in one gds and the entire vcf array
+		# therefore we have to iterate to discover which vcf matches the gds file input
 		for py_file in py_vcfarray:
 			py_base = os.path.basename(py_file)
 			if(py_base == "~{gzvcf}" or py_base == "~{bgzvcf}" or py_base == "~{uncompressed}" or py_base == "~{bcf}"):
 				write_config(py_file)
+
+		# only executes if we reach end of the array without a match
 		print("Failed to find a matching VCF for GDS file: ~{gds}")
-		exit(1)  # if we don't find a matching VCF, fail
+		exit(1)
 		CODE
 
 		echo "Setting chromosome number"
