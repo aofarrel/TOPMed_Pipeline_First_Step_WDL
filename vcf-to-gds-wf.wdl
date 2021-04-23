@@ -170,7 +170,7 @@ task check_gds {
 		python << CODE
 		import os
 
-		def split_components_add_space(py_splitstring):
+		def split_n_space(py_splitstring):
 			if(unicode(str(py_splitstring[1][1])).isnumeric()):
 				# chr10 and above
 				py_thisVcfWithSpace = "".join([
@@ -192,17 +192,11 @@ task check_gds {
 
 			# write VCF file
 			f.write("vcf_file ")
-			py_thisVcfSplitOnChr = py_vcf.split("chr")
-			f.write("'")
-			f.write(split_components_add_space(py_thisVcfSplitOnChr)[0])
-			f.write("'")
+			f.write("'" + split_n_space(py_vcf.split("chr"))[0] + "'")
 
 			# write GDS file
 			f.write("\ngds_file ")
-			py_thisGdsSplitOnChr = py_gds.split("chr")
-			f.write("'")
-			f.write(split_components_add_space(py_thisGdsSplitOnChr)[0])
-			f.write("'")
+			f.write("'" + split_n_space(py_gds.split("chr"))[0] + "'")
 
 			# write the sample file
 			if(~{sample}):
@@ -212,7 +206,7 @@ task check_gds {
 				f.write("'")
 
 			# grab chr number and close file
-			py_thisChr = split_components_add_space(py_thisGdsSplitOnChr)[1]
+			py_thisChr = split_n_space(py_gds.split("chr"))[1]
 			f.close()
 
 			# write chromosome number to new file, to be read in bash
