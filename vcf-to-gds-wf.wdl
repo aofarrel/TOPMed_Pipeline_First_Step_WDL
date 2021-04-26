@@ -193,16 +193,16 @@ task check_gds {
 		def write_config(py_vcf, py_gds):
 			f = open("check_gds.config", "a")
 
-			# write VCF file
 			f.write("vcf_file ")
 			f.write("'" + split_n_space(py_vcf.split("chr"))[0] + "'" + '\n')
 
-			# write GDS file
 			f.write("gds_file ")
 			f.write("'" + split_n_space(py_gds.split("chr"))[0] + "'" + '\n')
 
-			# write the sample file
-			if(~{sample}):
+			# if sample is not defined, the check evals to false as expected
+			# if sample is defined, Cromwell passes in the raw file path
+			# unfortunately the raw file path usually triggers a syntax error
+			if('~{sample}'):
 				f.write("sample_file ")
 				f.write("'" + "~{sample}" + "'")
 
