@@ -1,0 +1,10 @@
+{
+  "checker.vcf_files": ["testdata/1KG_phase3_subset_chr1.vcf.gz", "testdata/1KG_phase3_subset_chr2.vcf.gz", "testdata/1KG_phase3_subset_chr3.vcf.gz", "testdata/1KG_phase3_subset_chr20.vcf.gz", "testdata/1KG_phase3_subset_chrX.vcf.gz"],
+  "checker.vcfgds_disk": 50,
+  "checker.vcfgds_memory": 10,
+  "checker.uniquevars_disk": 50,
+  "checker.uniquevars_memory": 10,
+  "checker.check_gds": true,
+  "checker.checkgds_disk": 50,
+  "checker.checkgds_memory": 10
+}
