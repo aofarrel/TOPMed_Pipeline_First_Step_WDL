@@ -215,8 +215,6 @@ task check_gds {
 
 		py_vcfarray = ['~{sep="','" vcfs}']
 		py_gds = "~{gds}"
-		# recall that this is a scattered task and we pass in one gds and the entire vcf array
-		# therefore we have to iterate to discover which vcf matches the gds file input
 		py_vcf = py_vcfarray[0]
 		py_base = os.path.basename(py_vcf)
 		write_config(py_vcf, py_gds)
