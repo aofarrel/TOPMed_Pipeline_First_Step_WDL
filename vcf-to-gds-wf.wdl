@@ -248,17 +248,17 @@ workflow a_vcftogds {
 
 		# runtime attributes
 		# [1] vcf2gds
-		Int vcfgds_cpu = 1
+		Int vcfgds_cpu
 		Int vcfgds_disk
-		Int vcfgds_memory = 4
+		Int vcfgds_memory
 		# [2] uniquevarids
-		Int uniquevars_cpu = 1
+		Int uniquevars_cpu
 		Int uniquevars_disk
-		Int uniquevars_memory = 4
+		Int uniquevars_memory
 		# [3] checkgds
-		Int checkgds_cpu = 1
+		Int checkgds_cpu
 		Int checkgds_disk
-		Int checkgds_memory = 4
+		Int checkgds_memory
 	}
 
 	scatter(vcf_file in vcf_files) {
@@ -266,18 +266,18 @@ workflow a_vcftogds {
 			input:
 				vcf = vcf_file,
 				format = format,
-				cpu = vcfgds_cpu,
+				cpu = select_first(vcfgds_cpu, 2),
 				disk = vcfgds_disk,
-				memory = vcfgds_memory
+				memory = select_first(vcfgds_memory, 4)
 		}
 	}
 	
 	call unique_variant_id {
 		input:
 			gdss = vcf2gds.gds_output,
-			cpu = uniquevars_cpu,
+			cpu = select_first(uniquevars_cpu, 2),
 			disk = uniquevars_disk,
-			memory = uniquevars_memory
+			memory = select_first(uniquevars_memory, 4)
 	}
 	
 	if(check_gds) {
@@ -287,9 +287,9 @@ workflow a_vcftogds {
 					gds = gds,
 					vcfs = vcf_files,
 					sample = sample_file,
-					cpu = checkgds_cpu,
+					cpu = select_first(checkgds_cpu, 8),
 					disk = checkgds_disk,
-					memory = checkgds_memory
+					memory = select_first(checkgds_memory, 8)
 			}
 		}
 	}
