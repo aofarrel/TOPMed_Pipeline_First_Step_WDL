@@ -155,10 +155,6 @@ task check_gds {
 	input {
 		File gds
 		Array[File] vcfs
-		String gzvcf = basename(sub(gds, "\\.gds$", ".vcf.gz"))
-		String bgzvcf =  basename(sub(gds, "\\.gds$", ".vcf.bgz"))
-		String uncompressed = basename(sub(gds, "\\.gds$", ".vcf"))
-		String bcf = basename(sub(gds, "\\.gds$", ".bcf"))
 		# runtime attr
 		Int cpu
 		Int disk
@@ -173,7 +169,10 @@ task check_gds {
 		python << CODE
 		import os
 
-		def vcf_or_gds_with_space(py_splitstring):
+		def split_n_space(py_splitstring):
+		# Return [file name with chr name replaced by space, chr name]
+		# Ex: test_data_chrX.vcf.gz returns ["test_data_chr .vcf.gz", "X"]
+
 			if(unicode(str(py_splitstring[1][1])).isnumeric()):
 				# chr10 and above
 				py_thisVcfWithSpace = "".join([
@@ -190,43 +189,30 @@ task check_gds {
 				py_thisChr = py_splitstring[1][0:1]
 			return [py_thisVcfWithSpace, py_thisChr]
 
-		def write_config(py_file):
+		def write_config(py_vcf, py_gds):
 			f = open("check_gds.config", "a")
 
 			# write VCF file
 			f.write("vcf_file ")
-			py_thisVcfSplitOnChr = py_file.split("chr")
-			f.write("'")
-			f.write(vcf_or_gds_with_space(py_thisVcfSplitOnChr)[0])
-			f.write("'")
+			f.write("'" + split_n_space(py_vcf.split("chr"))[0] + "'" + '\n')
 
 			# write GDS file
-			f.write("\ngds_file ")
-			py_thisGdsSplitOnChr = "~{gds}".split("chr")
-			f.write("'")
-			f.write(vcf_or_gds_with_space(py_thisGdsSplitOnChr)[0])
-			f.write("'")
+			f.write("gds_file ")
+			f.write("'" + split_n_space(py_gds.split("chr"))[0] + "'" + '\n')
 
 			# grab chr number and close file
-			py_thisChr = vcf_or_gds_with_space(py_thisGdsSplitOnChr)[1]
+			py_thisChr = split_n_space(py_gds.split("chr"))[1]
 			f.close()
 
 			# write chromosome number to new file, to be read in bash
 			g = open("chr_number", "a")
 			g.write(str(py_thisChr)) # already str if chrX but python won't complain
-			exit()
 
 		py_vcfarray = ['~{sep="','" vcfs}']
-		# recall that this is a scattered task and we pass in one gds and the entire vcf array
-		# therefore we have to iterate to discover which vcf matches the gds file input
-		for py_file in py_vcfarray:
-			py_base = os.path.basename(py_file)
-			if(py_base == "~{gzvcf}" or py_base == "~{bgzvcf}" or py_base == "~{uncompressed}" or py_base == "~{bcf}"):
-				write_config(py_file)
-
-		# only executes if we reach end of the array without a match
-		print("Failed to find a matching VCF for GDS file: ~{gds}")
-		exit(1)
+		py_gds = "~{gds}"
+		py_vcf = py_vcfarray[0]
+		py_base = os.path.basename(py_vcf)
+		write_config(py_vcf, py_gds)
 		CODE
 
 		echo "Setting chromosome number"
