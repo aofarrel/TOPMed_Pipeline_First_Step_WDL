@@ -155,7 +155,6 @@ task check_gds {
 	input {
 		File gds
 		Array[File] vcfs
-		File? sample
 		# runtime attr
 		Int cpu
 		Int disk
@@ -201,11 +200,6 @@ task check_gds {
 			f.write("gds_file ")
 			f.write("'" + split_n_space(py_gds.split("chr"))[0] + "'" + '\n')
 
-			# write the sample file
-			if(~{sample}):
-				f.write("sample_file ")
-				f.write("'" + "~{sample}" + "'")
-
 			# grab chr number and close file
 			py_thisChr = split_n_space(py_gds.split("chr"))[1]
 			f.close()
@@ -243,7 +237,6 @@ workflow a_vcftogds {
 		Array[File] vcf_files
 		Array[String] format = ["GT"]
 		Boolean check_gds = false
-		File? sample_file
 
 		# runtime attributes
 		# [1] vcf2gds
@@ -285,7 +278,6 @@ workflow a_vcftogds {
 				input:
 					gds = gds,
 					vcfs = vcf_files,
-					sample = sample_file,
 					cpu = checkgds_cpu,
 					disk = checkgds_disk,
 					memory = checkgds_memory
