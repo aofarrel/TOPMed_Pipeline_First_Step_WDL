@@ -171,6 +171,9 @@ task check_gds {
 		import os
 
 		def split_n_space(py_splitstring):
+		# Return [file name with chr name replaced by space, chr name]
+		# Ex: test_data_chrX.vcf.gz returns ["test_data_chr .vcf.gz", "X"]
+
 			if(unicode(str(py_splitstring[1][1])).isnumeric()):
 				# chr10 and above
 				py_thisVcfWithSpace = "".join([
@@ -192,18 +195,16 @@ task check_gds {
 
 			# write VCF file
 			f.write("vcf_file ")
-			f.write("'" + split_n_space(py_vcf.split("chr"))[0] + "'")
+			f.write("'" + split_n_space(py_vcf.split("chr"))[0] + "'" + '\n')
 
 			# write GDS file
-			f.write("\ngds_file ")
-			f.write("'" + split_n_space(py_gds.split("chr"))[0] + "'")
+			f.write("gds_file ")
+			f.write("'" + split_n_space(py_gds.split("chr"))[0] + "'" + '\n')
 
 			# write the sample file
 			if(~{sample}):
 				f.write("sample_file ")
-				f.write("'")
-				f.write("~{sample}")
-				f.write("'")
+				f.write("'" + "~{sample}" + "'")
 
 			# grab chr number and close file
 			py_thisChr = split_n_space(py_gds.split("chr"))[1]
