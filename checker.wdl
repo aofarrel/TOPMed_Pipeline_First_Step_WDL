@@ -7,7 +7,7 @@ import "https://raw.githubusercontent.com/aofarrel/TOPMed_Pipeline_First_Step_WD
 task md5sum {
 	input {
 		File gds_test
-		File[Array] gds_truth
+		Array[File] gds_truth
 		File truth_info
 	}
 
@@ -38,8 +38,8 @@ task md5sum {
 workflow checker {
 	input {
 		# just for testing
-		File[Array] gds_tests
-		File[Array] gds_truths
+		Array[File] gds_tests
+		Array[File] gds_truths
 
 		Array[File] vcf_files
 		Array[String] format = ["GT"]
