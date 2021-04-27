@@ -18,13 +18,12 @@ task md5sum {
 	echo "If container versions are equivalent, there should be no difference in GDS output between a local run and a run on Terra."
 	md5sum ~{gds_test} > sum.txt
 
-	bash_truth=$(gds_truth sep=" ")
+	bash_truth=${sep=" " gds_truth}
 	echo $bash_truth
-	for i in "${bash_truth[@]}"
+	for i in ${bash_truth[@]}
 	do
-		echo $i
+		echo "$i"
 	done
-	#echo "$(cut -f1 -d' ' sum.txt)" ~{gds_truth} | md5sum --check 
 
 	>>>
 
