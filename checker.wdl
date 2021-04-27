@@ -22,7 +22,6 @@ task md5sum {
 	do
 		echo "${i}"
 	done
-
 	#echo "$(cut -f1 -d' ' sum.txt)" ~{gds_truth} | md5sum --check 
 	>>>
 
