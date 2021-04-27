@@ -4,25 +4,6 @@ version 1.0
 
 import "https://raw.githubusercontent.com/aofarrel/TOPMed_Pipeline_First_Step_WDL/master/vcf-to-gds-wf.wdl" as megastepA
 
-
-task investigate_container {
-	command <<<
-
-	#cat /etc/hostname
-	# this doesn't help, it doesnt have tags
-	# also calling same image in diff task gives diff hostname
-	# surely there is some way to compare containers???
-	# or at least see if container being used is also the latest??
-	# might not really be worth it tho
-
-	>>>
-
-	runtime {
-		docker: "python:3.8-slim"
-		preemptible: 2
-	}
-}
-
 task md5sum {
 	input {
 		File gds_test
@@ -71,15 +52,11 @@ workflow checker {
 		File? truth_info
 	}
 
-	call investigate_container
-
 	call md5sum {
 		input:
 				gds_test = gds_test,
 				gds_truth = gds_truth
 	}
-
-
 
 
 	scatter(vcf_file in vcf_files) {
