@@ -7,13 +7,24 @@ import "https://raw.githubusercontent.com/aofarrel/TOPMed_Pipeline_First_Step_WD
 task md5sum {
 	input {
 		File gds_test
-		File gds_truth
+		File[Array] gds_truth
+		File truth_info
 	}
 
 	command <<<
-
+	echo "Information about these truth files:"
+	head -n 3 "~{truth_info}"
+	echo "The container version refers to the container used in applicable tasks in the WDL and is the important value here."
+	echo "If container versions are equivalent, there should be no difference in GDS output between a local run and a run on Terra."
 	md5sum ~{gds_test} > sum.txt
-	echo "$(cut -f1 -d' ' sum.txt)" ~{gds_truth} | md5sum --check 
+
+	bash_truth=$(gds_truth sep=" ")
+	echo $bash_truth
+	for i in "${bash_truth[@]}"
+	do
+		echo $i
+	done
+	#echo "$(cut -f1 -d' ' sum.txt)" ~{gds_truth} | md5sum --check 
 
 	>>>
 
@@ -27,8 +38,8 @@ task md5sum {
 workflow checker {
 	input {
 		# just for testing
-		File gds_test
-		File gds_truth
+		File[Array] gds_tests
+		File[Array] gds_truths
 
 		Array[File] vcf_files
 		Array[String] format = ["GT"]
@@ -49,51 +60,54 @@ workflow checker {
 		Int checkgds_memory = 4
 
 		# checker-specific
-		File? truth_info
+		File truth_info
 	}
 
-	call md5sum {
-		input:
-				gds_test = gds_test,
-				gds_truth = gds_truth
-	}
-
-
-	scatter(vcf_file in vcf_files) {
-		call megastepA.vcf2gds {
+	#scatter(gds_test in unique_variant_id.unique_variant_id_gds_per_chr) {
+	scatter(gds in gds_tests) {
+		call md5sum {
 			input:
-				vcf = vcf_file,
-				format = format,
-				cpu = vcfgds_cpu,
-				disk = vcfgds_disk,
-				memory = vcfgds_memory
+				gds_test = gds,
+				gds_truth = gds_truths,
+				truth_info = truth_info
 		}
 	}
+
+	#scatter(vcf_file in vcf_files) {
+	#	call megastepA.vcf2gds {
+	#		input:
+	#			vcf = vcf_file,
+	#			format = format,
+	#			cpu = vcfgds_cpu,
+	#			disk = vcfgds_disk,
+	#			memory = vcfgds_memory
+	#	}
+	#}
 	
-	call megastepA.unique_variant_id {
-		input:
-			gdss = vcf2gds.gds_output,
-			cpu = uniquevars_cpu,
-			disk = uniquevars_disk,
-			memory = uniquevars_memory
-	}
+	#call megastepA.unique_variant_id {
+	#	input:
+	#		gdss = vcf2gds.gds_output,
+	#		cpu = uniquevars_cpu,
+	#		disk = uniquevars_disk,
+	#		memory = uniquevars_memory
+	#}
 	
-	if(check_gds) {
-		scatter(gds in unique_variant_id.unique_variant_id_gds_per_chr) {
-			call megastepA.check_gds {
-				input:
-					gds = gds,
-					vcfs = vcf_files,
-					cpu = checkgds_cpu,
-					disk = checkgds_disk,
-					memory = checkgds_memory
-			}
-		}
-	}
+	#if(check_gds) {
+	#	scatter(gds in unique_variant_id.unique_variant_id_gds_per_chr) {
+	#		call megastepA.check_gds {
+	#			input:
+	#				gds = gds,
+	#				vcfs = vcf_files,
+	#				cpu = checkgds_cpu,
+	#				disk = checkgds_disk,
+	#				memory = checkgds_memory
+	#		}
+	#	}
+	#}
 
 
 	meta {
 		author: "Ash O'Farrell"
 		email: "aofarrel@ucsc.edu"
-		}
+	}
 }
