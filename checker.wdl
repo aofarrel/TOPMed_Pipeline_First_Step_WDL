@@ -1,7 +1,5 @@
 version 1.0
 
-# WARNING: By default, this WILL run the costly check_gds step!
-
 import "https://raw.githubusercontent.com/aofarrel/TOPMed_Pipeline_First_Step_WDL/master/vcf-to-gds-wf.wdl" as megastepA
 
 task md5sum {
@@ -12,21 +10,28 @@ task md5sum {
 	}
 
 	command <<<
+
 	echo "Information about these truth files:"
 	head -n 3 "~{truth_info}"
 	echo "The container version refers to the container used in applicable tasks in the WDL and is the important value here."
 	echo "If container versions are equivalent, there should be no difference in GDS output between a local run and a run on Terra."
+	
 	md5sum ~{gds_test} > sum.txt
+	test_basename="$(basename -- ~{gds_test})"
+	echo "test file: ${test_basename}"
 
 	for i in ~{sep=' ' gds_truth}
 	do
-		echo "${i}"
+		truth_basename="$(basename -- ${i})"
+		if [ "${test_basename}" == "${truth_basename}" ]; then
+			echo "$(cut -f1 -d' ' sum.txt)" ${i} | md5sum --check
+		fi
 	done
-	#echo "$(cut -f1 -d' ' sum.txt)" ~{gds_truth} | md5sum --check 
 	>>>
 
 	runtime {
 		docker: "python:3.8-slim"
+		memory: "2 GB"
 		preemptible: 2
 	}
 
@@ -34,15 +39,16 @@ task md5sum {
 
 workflow checker {
 	input {
-		# just for testing
-		Array[File] gds_tests
+		# checker-specific
+		File truth_info
 		Array[File] gds_truths
 
+		# standard workflow
 		Array[File] vcf_files
 		Array[String] format = ["GT"]
-		Boolean check_gds = true  # careful now...
+		Boolean check_gds = true   #careful now...
 
-		# runtime attributes
+		# standard workflow runtime attributes
 		# [1] vcf2gds
 		Int vcfgds_cpu = 1
 		Int vcfgds_disk = 60
@@ -56,51 +62,48 @@ workflow checker {
 		Int checkgds_disk = 60
 		Int checkgds_memory = 4
 
-		# checker-specific
-		File truth_info
 	}
 
-	#scatter(gds_test in unique_variant_id.unique_variant_id_gds_per_chr) {
-	scatter(gds in gds_tests) {
+	scatter(vcf_file in vcf_files) {
+		call megastepA.vcf2gds {
+			input:
+				vcf = vcf_file,
+				format = format,
+				cpu = vcfgds_cpu,
+				disk = vcfgds_disk,
+				memory = vcfgds_memory
+		}
+	}
+	
+	call megastepA.unique_variant_id {
+		input:
+			gdss = vcf2gds.gds_output,
+			cpu = uniquevars_cpu,
+			disk = uniquevars_disk,
+			memory = uniquevars_memory
+	}
+	
+	if(check_gds) {
+		scatter(gds in unique_variant_id.unique_variant_id_gds_per_chr) {
+			call megastepA.check_gds {
+				input:
+					gds = gds,
+					vcfs = vcf_files,
+					cpu = checkgds_cpu,
+					disk = checkgds_disk,
+					memory = checkgds_memory
+			}
+		}
+	}
+
+	scatter(gds_test in unique_variant_id.unique_variant_id_gds_per_chr) {
 		call md5sum {
 			input:
-				gds_test = gds,
+				gds_test = gds_test,
 				gds_truth = gds_truths,
 				truth_info = truth_info
 		}
 	}
-
-	#scatter(vcf_file in vcf_files) {
-	#	call megastepA.vcf2gds {
-	#		input:
-	#			vcf = vcf_file,
-	#			format = format,
-	#			cpu = vcfgds_cpu,
-	#			disk = vcfgds_disk,
-	#			memory = vcfgds_memory
-	#	}
-	#}
-	
-	#call megastepA.unique_variant_id {
-	#	input:
-	#		gdss = vcf2gds.gds_output,
-	#		cpu = uniquevars_cpu,
-	#		disk = uniquevars_disk,
-	#		memory = uniquevars_memory
-	#}
-	
-	#if(check_gds) {
-	#	scatter(gds in unique_variant_id.unique_variant_id_gds_per_chr) {
-	#		call megastepA.check_gds {
-	#			input:
-	#				gds = gds,
-	#				vcfs = vcf_files,
-	#				cpu = checkgds_cpu,
-	#				disk = checkgds_disk,
-	#				memory = checkgds_memory
-	#		}
-	#	}
-	#}
 
 
 	meta {
