@@ -1,5 +1,7 @@
 version 1.0
 
+# Please be sure to read the caveats on Github
+
 import "https://raw.githubusercontent.com/aofarrel/TOPMed_Pipeline_First_Step_WDL/master/vcf-to-gds-wf.wdl" as megastepA
 
 task md5sum {
